@@ -20,10 +20,6 @@
         {
           name: '2021',
           data: [18, 7, 15, 29, 18, 12, 9]
-        },
-        {
-          name: '2020',
-          data: [-13, -18, -9, -14, -5, -17, -15]
         }
       ],
       chart: {
@@ -279,7 +275,7 @@
   const growthChartEl = document.querySelector('#growthChart'),
     growthChartOptions = {
       series: [78],
-      labels: ['Growth'],
+      labels: ['Receipt'],
       chart: {
         height: 240,
         type: 'radialBar'
