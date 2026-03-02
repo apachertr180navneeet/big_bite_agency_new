@@ -23,6 +23,7 @@
         <script src="{{asset('assets/admin/vendor/js/helpers.js')}}"></script>
         <script src="{{asset('assets/admin/js/config.js')}}"></script>
         <link rel="stylesheet" href="{{asset('assets/admin/css/sweet-alert.css')}}" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
         @yield('style')
         <style>
             
@@ -55,6 +56,11 @@
                 <script src="{{asset('assets/admin/js/dashboards-analytics.js')}}"></script>
                 <script src="{{asset('assets/admin/js/moment.min.js')}}"></script>
                 <script async defer src="https://buttons.github.io/buttons.js"></script>
+                <!-- jQuery Validation -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+
+                <!-- Toastr -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
                 @yield('script')
                 @include('admin.layouts.elements.sweet_alerts')
             </div>

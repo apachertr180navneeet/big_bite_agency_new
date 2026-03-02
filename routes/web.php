@@ -2,7 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\HomeController;
-use App\Http\Controllers\Admin\AdminAuthController;
+
+use App\Http\Controllers\Admin\{
+    AdminAuthController
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +49,20 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('profile', [AdminAuthController::class, 'adminProfile'])->name('profile');
 
         Route::post('profile', [AdminAuthController::class, 'updateAdminProfile'])->name('update.profile');
+
+        foreach ([ 'salesperson' ] as $resource) {
+            Route::prefix($resource)->name("$resource.")->group(function () use ($resource) {
+                $controller = "App\Http\Controllers\Admin\\" . ucfirst($resource) . "Controller";
+                Route::get('/', [$controller, 'index'])->name('index');
+                Route::get('all', [$controller, 'getall'])->name('getall');
+                Route::get('/create', [$controller, 'create'])->name('create');
+                Route::post('/store', [$controller, 'store'])->name('store');
+                Route::delete('/delete/{id}', [$controller, 'delete'])->name('delete');
+                Route::post('/status/{id}', [$controller, 'changeStatus'])->name('status');
+                Route::get('/edit/{id}', [$controller, 'edit'])->name('edit');
+                Route::post('/update/{id}', [$controller, 'update'])->name('update');
+            });
+        }
     });
 
 });
