@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <!-- Banner Table -->
+    <!-- Sales Person Table -->
     <div class="row">
         <div class="col-xl-12 col-lg-12">
             <div class="card">
