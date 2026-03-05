@@ -34,6 +34,13 @@
 				<div data-i18n="Dashboard">Customer</div>
 			</a>
 		</li>
+
+		<li class="menu-item {{ request()->is('admin/invoice') ? 'active' : ''}}">
+			<a href="{{route('admin.invoice.index')}}" class="menu-link">
+				<i class="menu-icon tf-icons bx bx-home-circle"></i>
+				<div data-i18n="Dashboard">Invoice</div>
+			</a>
+		</li>
 		
 	</ul>
 </aside>

@@ -1,0 +1,115 @@
+@extends('admin.layouts.app')
+
+@section('style')
+@endsection
+
+@section('content')
+
+<div class="container-fluid flex-grow-1 container-p-y">
+
+    <div class="row">
+        <div class="col-md-6 text-start">
+            <h5 class="py-2 mb-2">
+                <span class="text-primary fw-light">Invoice Management</span>
+            </h5>
+        </div>
+
+        <div class="col-md-6 text-end">
+            <a href="{{ route('admin.invoice.index') }}" class="btn btn-primary">
+                Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-12 col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="card-title">
+                            <span class="text-primary fw-bold">Add Invoice</span>
+                        </h5>
+                        <hr>
+                    </div>
+
+                    <form id="invoiceForm" data-mode="create" action="{{ route('admin.invoice.store') }}" method="POST">
+                        @csrf
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date <span class="text-danger">*</span></label>
+                                <input type="date" name="date" class="form-control" value="{{ old('date') }}">
+                                @error('date')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Invoice No. <span class="text-danger">*</span></label>
+                                <input type="text" name="invoice_no" class="form-control" placeholder="Enter Invoice No." value="{{ old('invoice_no') }}">
+                                @error('invoice_no')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Firm Name <span class="text-danger">*</span></label>
+                                <select name="firm_id" class="form-select">
+                                    <option value="">Select Firm</option>
+                                    @foreach ($customers as $customer)
+                                        <option value="{{ $customer->id }}" {{ old('firm_id') == $customer->id ? 'selected' : '' }}>
+                                            {{ $customer->firm_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('firm_id')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Salesperson Name <span class="text-danger">*</span></label>
+                                <select name="salesperson_id" class="form-select">
+                                    <option value="">Select Salesperson</option>
+                                    @foreach ($salespersons as $salesperson)
+                                        <option value="{{ $salesperson->id }}" {{ old('salesperson_id') == $salesperson->id ? 'selected' : '' }}>
+                                            {{ $salesperson->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('salesperson_id')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" name="amount" class="form-control" placeholder="Enter Amount" value="{{ old('amount') }}">
+                                @error('amount')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success">
+                                Save Invoice
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@endsection
+
+@section('script')
+<script>
+    const indexInvoiceUrl = "{{ route('admin.invoice.index') }}";
+</script>
+<script src="{{ asset('assets/admin/customjs/invoice/index.js') }}"></script>
+@endsection
