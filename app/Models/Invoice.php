@@ -21,19 +21,18 @@ class Invoice extends Model
         'status',
     ];
 
-    /**
-     * Customer Relationship
-     */
     public function firm()
     {
         return $this->belongsTo(Customer::class);
     }
 
-    /**
-     * Salesperson Relationship
-     */
     public function salesperson()
     {
         return $this->belongsTo(Salesperson::class);
+    }
+
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class, 'invoice_id');
     }
 }
