@@ -102,15 +102,11 @@ class ReceiptController extends Controller
             ->orderBy('firm_name')
             ->get(['id', 'firm_name', 'discount']);
 
-        $invoices = Invoice::query()
-            ->with('salesperson:id,name')
-            ->withSum('receipts as paid_amount', 'given_amount')
-            ->orderBy('invoice_no')
-            ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id']);
+        
 
         $generatedReceiptNo = $this->generateReceiptNo();
 
-        return view('admin.receipt.create', compact('customers', 'invoices', 'generatedReceiptNo'));
+        return view('admin.receipt.create', compact('customers','generatedReceiptNo'));
     }
 
     public function store(Request $request)
@@ -126,8 +122,10 @@ class ReceiptController extends Controller
             'status' => 'nullable|in:pending,accpet,rejected',
         ]);
 
+        $discount = $request->discount;
+
         [$customer, $invoice] = $this->resolveCustomerAndInvoice($request->firm_id, $request->invoice_id);
-        [$invoiceAmount, $discountPercent, $payableAmount] = $this->invoiceFinancials($invoice, $customer);
+        [$invoiceAmount, $discountPercent, $payableAmount] = $this->invoiceFinancials($invoice, $customer , $discount);
 
         $totalPaidBefore = (float) Receipt::where('invoice_id', $invoice->id)->sum('given_amount');
         $newTotalPaid = round($totalPaidBefore + (float) $request->given_amount, 2);
@@ -299,10 +297,10 @@ class ReceiptController extends Controller
         return [$customer, $invoice];
     }
 
-    private function invoiceFinancials(Invoice $invoice, Customer $customer): array
+    private function invoiceFinancials(Invoice $invoice, Customer $customer, $discount): array
     {
         $invoiceAmount = round((float) $invoice->amount, 2);
-        $discountPercent = round((float) $customer->discount, 2);
+        $discountPercent = round((float) $discount, 2);
         $payableAmount = round($invoiceAmount - (($invoiceAmount * $discountPercent) / 100), 2);
 
         return [$invoiceAmount, $discountPercent, $payableAmount];
@@ -340,6 +338,46 @@ class ReceiptController extends Controller
         }
 
         return 'RCPT-' . str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
+    }
+
+
+    public function getPendingInvoices($firm_id)
+    {
+        $invoices = Invoice::with('salesperson:id,name')
+            ->withSum('receipts as paid_amount', 'given_amount')
+            ->where('firm_id', $firm_id)
+            ->where('status', 'pending') // only pending invoice
+            ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id']);
+
+        return response()->json($invoices);
+    }
+
+
+    public function getInvoiceDetail($id)
+    {
+        $invoice = Invoice::find($id);
+
+        dd($invoice);
+
+        if (!$invoice) {
+            return response()->json([
+                'status' => false
+            ]);
+        }
+
+        $totalAmount = $invoice->total_amount;
+        $discount = $invoice->discount ?? 0;
+        $paidAmount = $invoice->receipts_sum_given_amount ?? 0;
+
+        $remainingAmount = ($totalAmount - $discount) - $paidAmount;
+
+        return response()->json([
+            'status' => true,
+            'total_amount' => $totalAmount,
+            'discount' => $discount,
+            'paid_amount' => $paidAmount,
+            'remaining_amount' => $remainingAmount
+        ]);
     }
 }
 

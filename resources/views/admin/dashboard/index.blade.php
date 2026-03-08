@@ -48,7 +48,7 @@
                                 </div>
                             </div>
                             <span class="fw-medium d-block mb-1">Total Bill Count</span>
-                            <h3 class="card-title mb-2">12,628</h3>
+                            <h3 class="card-title mb-2">{{ $invoiceCount }}</h3>
                         </div>
                     </div>
                 </div>
@@ -62,7 +62,7 @@
                                 </div>
                             </div>
                             <span>Total Bill Amount</span>
-                            <h3 class="card-title text-nowrap mb-1">4,679</h3>
+                            <h3 class="card-title text-nowrap mb-1">{{ $totalBillAmount }}</h3>
                         </div>
                     </div>
                 </div>
@@ -124,7 +124,7 @@
                                 </div>
                             </div>
                             <span class="d-block mb-1">Salesman</span>
-                            <h3 class="card-title text-nowrap mb-2">2,456</h3>
+                            <h3 class="card-title text-nowrap mb-2">{{ $activeSalesperson }}</h3>
                         </div>
                     </div>
                 </div>
@@ -137,8 +137,8 @@
                                     <img src="{{ asset('assets/admin/img/icons/unicons/cc-primary.png') }}"  alt="Credit Card" class="rounded" />
                                 </div>
                             </div>
-                            <span class="fw-medium d-block mb-1">Cooustomer</span>
-                            <h3 class="card-title mb-2">14,857</h3>
+                            <span class="fw-medium d-block mb-1">Customer</span>
+                            <h3 class="card-title mb-2">{{ $activeSalesperson }}</h3>
                         </div>
                     </div>
                 </div>
@@ -152,7 +152,7 @@
                                 </div>
                             </div>
                             <span class="d-block mb-1">OutStanding</span>
-                            <h3 class="card-title text-nowrap mb-2">2,456</h3>
+                            <h3 class="card-title text-nowrap mb-2">{{ $totalOutstandingAmount }}</h3>
                         </div>
                     </div>
                 </div>

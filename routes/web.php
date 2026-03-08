@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\HomeController;
 
 use App\Http\Controllers\Admin\{
-    AdminAuthController
+    AdminAuthController,
+    ReceiptController
 };
 
 /*
@@ -66,6 +67,11 @@ Route::name('admin.')->prefix('admin')->group(function () {
     });
 
 });
+
+// Ajax Route
+Route::get('/get-pending-invoices/{firm_id}', [ReceiptController::class, 'getPendingInvoices'])->name('get.pending.invoices');
+
+Route::get('/get-invoice-detail/{id}', [ReceiptController::class, 'getInvoiceDetail'])->name('get.invoice.detail');
 
 Route::middleware(['auth'])->group(function () {
 

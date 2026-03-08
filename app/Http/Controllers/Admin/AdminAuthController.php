@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
-use Mail, DB, Hash, Validator, Session, File,Exception;
+use App\Models\Invoice;
+use App\Models\Customer;
+use App\Models\Salesperson;
+use App\Models\Receipt;
 
 class AdminAuthController extends Controller
 {
@@ -32,8 +35,6 @@ class AdminAuthController extends Controller
             return back()->with("error",$e->getMessage());
         }
     }
-
-    
 
     public function login()
     {
@@ -269,7 +270,40 @@ class AdminAuthController extends Controller
 
     public function adminDashboard()
     {
-        return view("admin.dashboard.index");
+        // Salesperson
+        $salespersonCount = Salesperson::count();
+        $activeSalesperson = Salesperson::where('status', 'active')->count();
+
+        // Customers
+        $customerCount = Customer::count();
+        $activeCustomer = Customer::where('status', 'active')->count();
+
+        // Invoices
+        $invoiceCount = Invoice::count();
+
+        // Total Bill Amount
+        $totalBillAmount = Invoice::sum('amount');
+
+        // Receipts
+        $receiptCount = Receipt::count();
+
+        // Total Received Amount
+        $totalReceivedAmount = Receipt::sum('given_amount');
+
+        // Total Outstanding Amount
+        $totalOutstandingAmount = $totalBillAmount - $totalReceivedAmount;
+
+        return view("admin.dashboard.index", compact(
+            'salespersonCount',
+            'activeSalesperson',
+            'customerCount',
+            'activeCustomer',
+            'invoiceCount',
+            'totalBillAmount',
+            'receiptCount',
+            'totalReceivedAmount',
+            'totalOutstandingAmount'
+        ));
     }
 
 

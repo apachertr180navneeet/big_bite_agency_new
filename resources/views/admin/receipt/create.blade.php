@@ -56,11 +56,6 @@
                                 <label class="form-label">Invoice <span class="text-danger">*</span></label>
                                 <select name="invoice_id" class="form-select" id="invoice_id">
                                     <option value="">Select Invoice</option>
-                                    @foreach ($invoices as $invoice)
-                                        <option value="{{ $invoice->id }}" data-amount="{{ $invoice->amount }}" data-firm="{{ $invoice->firm_id }}" data-sales-person="{{ optional($invoice->salesperson)->name }}" data-paid="{{ number_format((float) ($invoice->paid_amount ?? 0), 2, '.', '') }}" {{ old('invoice_id') == $invoice->id ? 'selected' : '' }}>
-                                            {{ $invoice->invoice_no }} ({{ strtoupper($invoice->status) }})
-                                        </option>
-                                    @endforeach
                                 </select>
                             </div>
 
@@ -71,7 +66,7 @@
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Discount (%)</label>
-                                <input type="number" step="0.01" min="0" max="100" name="discount" id="discount" class="form-control" value="{{ old('discount', 0) }}" readonly>
+                                <input type="number" step="0.01" min="0" max="100" name="discount" id="discount" class="form-control" value="{{ old('discount', 0) }}">
                             </div>
 
                             <div class="col-md-4 mb-3">
