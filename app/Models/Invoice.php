@@ -18,6 +18,9 @@ class Invoice extends Model
         'firm_id',
         'salesperson_id',
         'amount',
+        'discount_percent',
+        'discount_amount',
+        'payable_amount',
         'status',
     ];
 

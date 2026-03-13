@@ -78,7 +78,6 @@
                                     <th>Invoice No</th>
                                     <th>Amount</th>
                                     <th>Given</th>
-                                    <th>Discount</th>
                                     <th>Final</th>
                                     <th>Mode</th>
                                     <th>Manager Status</th>

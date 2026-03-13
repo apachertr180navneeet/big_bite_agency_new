@@ -9,12 +9,15 @@ $(document).ready(function () {
     });
 
     function renderStatusBadge(value) {
+
         if (value === "accpet") {
             return '<span class="badge bg-label-success">Accept</span>';
         }
+
         if (value === "rejected") {
             return '<span class="badge bg-label-danger">Rejected</span>';
         }
+
         return '<span class="badge bg-label-warning">Pending</span>';
     }
 
@@ -27,24 +30,29 @@ $(document).ready(function () {
     if ($("#receiptTable").length) {
 
         receiptTable = $("#receiptTable").DataTable({
+
             processing: true,
             serverSide: true,
             autoWidth: false,
             searching: false,
+
             ajax: {
                 url: getReceiptUrl,
                 type: "GET",
                 data: function (d) {
+
                     d.receipt_no = $("#filter_receipt_no").val();
                     d.date_from = $("#filter_date_from").val();
                     d.date_to = $("#filter_date_to").val();
                     d.mode = $("#filter_mode").val();
                     d.manager_status = $("#filter_manager_status").val();
                     d.status = $("#filter_status").val();
+
                 }
             },
 
             columns: [
+
                 { data: "receipt_no" },
                 { data: "date" },
                 { data: "firm_name", defaultContent: "-" },
@@ -61,13 +69,6 @@ $(document).ready(function () {
                     data: "given_amount",
                     render: function (data) {
                         return Number(data || 0).toFixed(2);
-                    }
-                },
-
-                {
-                    data: "discount",
-                    render: function (data) {
-                        return Number(data || 0).toFixed(2) + "%";
                     }
                 },
 
@@ -97,10 +98,10 @@ $(document).ready(function () {
                     render: function (data, type, row) {
 
                         return `<select class="form-select form-select-sm change-receipt-status" data-id="${row.id}">
-                                <option value="pending" ${data === "pending" ? "selected" : ""}>Pending</option>
-                                <option value="accpet" ${data === "accpet" ? "selected" : ""}>Accept</option>
-                                <option value="rejected" ${data === "rejected" ? "selected" : ""}>Rejected</option>
-                            </select>`;
+                            <option value="pending" ${data === "pending" ? "selected" : ""}>Pending</option>
+                            <option value="accpet" ${data === "accpet" ? "selected" : ""}>Accept</option>
+                            <option value="rejected" ${data === "rejected" ? "selected" : ""}>Rejected</option>
+                        </select>`;
                     }
                 },
 
@@ -131,7 +132,6 @@ $(document).ready(function () {
 
     }
 
-
     /*
     =========================
     DELETE RECEIPT
@@ -157,6 +157,7 @@ $(document).ready(function () {
             const url = deleteReceiptUrl.replace(":id", id);
 
             $.ajax({
+
                 url: url,
                 type: "DELETE",
 
@@ -164,7 +165,7 @@ $(document).ready(function () {
 
                     toastr.success(response.message || "Receipt deleted");
 
-                    $("#receiptTable").DataTable().ajax.reload(null, false);
+                    receiptTable.ajax.reload(null, false);
                 },
 
                 error: function () {
@@ -176,7 +177,6 @@ $(document).ready(function () {
         });
 
     });
-
 
     /*
     =========================
@@ -244,13 +244,11 @@ $(document).ready(function () {
 
     }
 
-
     /*
     =========================
-    customer invoice 
+    LOAD CUSTOMER INVOICES
     =========================
     */
-
 
     $("#firm_id").on("change", function () {
 
@@ -259,11 +257,13 @@ $(document).ready(function () {
 
         invoiceDropdown.html('<option value="">Loading...</option>');
 
-        if (firm_id != "") {
+        if (firm_id !== "") {
 
             $.ajax({
+
                 url: "/get-pending-invoices/" + firm_id,
                 type: "GET",
+
                 success: function (data) {
 
                     invoiceDropdown.html('<option value="">Select Invoice</option>');
@@ -273,60 +273,101 @@ $(document).ready(function () {
                         $.each(data, function (index, invoice) {
 
                             let paid = invoice.paid_amount ?? 0;
+                            let payable = invoice.payable_amount ?? 0;
+
+                            let remaining = payable - paid;
 
                             invoiceDropdown.append(`
                                 <option value="${invoice.id}" 
                                     data-amount="${invoice.amount}"
-                                    data-firm="${invoice.firm_id}"
-                                    data-sales-person="${invoice.salesperson ? invoice.salesperson.name : ''}"
-                                    data-paid="${paid}">
-                                    ${invoice.invoice_no} (${invoice.status.toUpperCase()})
+                                    data-payable="${payable}"
+                                    data-paid="${paid}"
+                                    data-sales-person="${invoice.salesperson ? invoice.salesperson.name : ''}">
+                                    ${invoice.invoice_no} (Remaining: ${remaining})
                                 </option>
                             `);
 
                         });
 
                     } else {
+
                         invoiceDropdown.html('<option value="">No Pending Invoice</option>');
+
                     }
+
                 }
+
             });
 
         } else {
+
             invoiceDropdown.html('<option value="">Select Invoice</option>');
+
         }
+
+    });
+
+    /*
+    =========================
+    INVOICE DETAIL
+    =========================
+    */
+
+    $("#invoice_id").on("change", function () {
+
+        let selected = $(this).find(":selected");
+
+        let salesPerson = selected.data("sales-person") || "";
+        let amount = selected.data("amount") || 0;
+        let payable = selected.data("payable") || 0;
+        let paid = selected.data("paid") || 0;
+
+        let remaining = payable - paid;
+
+        $("#amount").val(amount);
+        $("#remaining_amount").val(remaining.toFixed(2));
+        $("#sales_person").val(salesPerson);
 
     });
 
 
     /*
-        inovice detail
+    =========================
+    CHANGE RECEIPT STATUS
+    =========================
     */
 
-    $('#invoice_id').on('change', function () {
+    $(document).on("change", ".change-receipt-status", function () {
 
-        let invoiceId = $(this).val();
+        let id = $(this).data("id");
+        let status = $(this).val();
 
-        if (invoiceId == '') {
-            return;
-        }
+        let url = updateReceiptStatusUrl.replace(":id", id);
 
         $.ajax({
-            url: "/get-invoice-detail/" + invoiceId,
-            type: "GET",
+
+            url: url,
+            type: "POST",
+            data: {
+                status: status
+            },
+
             success: function (response) {
 
-                if (response.status) {
+                toastr.success(response.message || "Status updated");
 
-                    $('#total_amount').val(response.total_amount);
-                    $('#discount').val(response.discount);
-                    $('#paid_amount').val(response.paid_amount);
-                    $('#remaining_amount').val(response.remaining_amount);
+                $("#receiptTable").DataTable().ajax.reload(null, false);
 
-                }
+            },
+
+            error: function () {
+
+                toastr.error("Status update failed");
 
             }
+
         });
 
     });
+
 });

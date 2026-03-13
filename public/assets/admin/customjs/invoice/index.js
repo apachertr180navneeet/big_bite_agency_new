@@ -31,10 +31,15 @@ $(document).ready(function () {
                 }
             },
             columns: [
+
                 { data: "invoice_no", searchable: true },
+
                 { data: "date", searchable: true },
+
                 { data: "firm_name", searchable: true },
+
                 { data: "salesperson_name", searchable: true },
+
                 {
                     data: "amount",
                     searchable: false,
@@ -42,21 +47,50 @@ $(document).ready(function () {
                         return Number(data).toFixed(2);
                     }
                 },
+
+                {
+                    data: "discount_percent",
+                    searchable: false,
+                    render: function (data) {
+                        return data ? Number(data).toFixed(2) + " %" : "0 %";
+                    }
+                },
+
+                {
+                    data: "discount_amount",
+                    searchable: false,
+                    render: function (data) {
+                        return data ? Number(data).toFixed(2) : "0.00";
+                    }
+                },
+
+                {
+                    data: "payable_amount",
+                    searchable: false,
+                    render: function (data) {
+                        return data ? Number(data).toFixed(2) : "0.00";
+                    }
+                },
+
                 {
                     data: "status",
                     searchable: true,
                     render: function (data) {
+
                         if (data === "full_paid") {
                             return '<span class="badge bg-label-success">Full Paid</span>';
                         }
+
                         return '<span class="badge bg-label-warning">Pending</span>';
                     }
                 },
+
                 {
                     data: "id",
                     searchable: false,
                     orderable: false,
                     render: function (data) {
+
                         const editBtn = `
                             <a href="${editInvoiceUrl.replace(":id", data)}" class="btn btn-sm btn-warning me-1">
                                 Edit
@@ -72,6 +106,7 @@ $(document).ready(function () {
                         return `${editBtn}${deleteBtn}`;
                     }
                 }
+
             ]
         });
     }
@@ -207,5 +242,19 @@ $(document).ready(function () {
             }
         });
     }
+
+
+    $(document).on('keyup change','#amount,#discount_percent',function(){
+
+        let amount = parseFloat($('#amount').val()) || 0;
+        let percent = parseFloat($('#discount_percent').val()) || 0;
+
+        let discount = (amount * percent) / 100;
+        let payable = amount - discount;
+
+        $('#discount_amount').val(discount.toFixed(2));
+        $('#payable_amount').val(payable.toFixed(2));
+
+    });
 });
 

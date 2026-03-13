@@ -63,17 +63,7 @@
                                 <label class="form-label">Invoice Amount</label>
                                 <input type="number" step="0.01" min="0" name="amount" id="amount" class="form-control" value="{{ old('amount') }}" readonly>
                             </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Discount (%)</label>
-                                <input type="number" step="0.01" min="0" max="100" name="discount" id="discount" class="form-control" value="{{ old('discount', 0) }}">
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Net Payable</label>
-                                <input type="number" step="0.01" min="0" name="final_amount" id="final_amount" class="form-control" value="{{ old('final_amount', 0) }}" readonly>
-                            </div>
-
+                            
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Remaining Amount</label>
                                 <input type="number" step="0.01" min="0" id="remaining_amount" class="form-control" value="" readonly>

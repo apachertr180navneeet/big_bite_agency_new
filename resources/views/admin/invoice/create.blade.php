@@ -84,10 +84,22 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Amount <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" name="amount" class="form-control" placeholder="Enter Amount" value="{{ old('amount') }}">
-                                @error('amount')
-                                    <small class="text-danger">{{ $message }}</small>
-                                @enderror
+                                <input type="number" step="0.01" min="0" name="amount" id="amount" class="form-control" placeholder="Enter Amount" value="{{ old('amount') }}">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Discount %</label>
+                                <input type="number" step="0.01" min="0" name="discount_percent" id="discount_percent" class="form-control" placeholder="Enter Discount %" value="{{ old('discount_percent') }}">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Discount Amount</label>
+                                <input type="text" name="discount_amount" id="discount_amount" class="form-control" readonly>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Payable Amount</label>
+                                <input type="text" name="payable_amount" id="payable_amount" class="form-control" readonly>
                             </div>
 
                         </div>

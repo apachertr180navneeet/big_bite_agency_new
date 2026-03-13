@@ -157,24 +157,31 @@ class InvoiceController extends Controller
             'firm_id' => 'required|exists:customers,id',
             'salesperson_id' => 'required|exists:salespersons,id',
             'amount' => 'required|numeric|min:0',
+            'discount_percent' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        $amount = $request->amount;
+        $discountPercent = $request->discount_percent ?? 0;
+
+        $discountAmount = ($amount * $discountPercent) / 100;
+        $payableAmount = $amount - $discountAmount;
 
         $invoice = Invoice::create([
             'date' => $request->date,
             'invoice_no' => $request->invoice_no,
             'firm_id' => $request->firm_id,
             'salesperson_id' => $request->salesperson_id,
-            'amount' => $request->amount,
+            'amount' => $amount,
+            'discount_percent' => $discountPercent,
+            'discount_amount' => $discountAmount,
+            'payable_amount' => $payableAmount,
         ]);
 
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => true,
-                'message' => 'Invoice added successfully',
-                'data' => $invoice,
-            ]);
-        }
-        return redirect()->route('admin.invoice.index')->with('success', 'Invoice added successfully');
+        return response()->json([
+            'status' => true,
+            'message' => 'Invoice added successfully',
+            'data' => $invoice,
+        ]);
     }
     /**
      * Delete invoice
@@ -223,16 +230,23 @@ class InvoiceController extends Controller
             'firm_id' => 'required|exists:customers,id',
             'salesperson_id' => 'required|exists:salespersons,id',
             'amount' => 'required|numeric|min:0',
-            'status' => 'required|in:pending,full_paid',
         ]);
+
+        $amount = $request->amount;
+        $discountPercent = $request->discount_percent ?? 0;
+
+        $discountAmount = ($amount * $discountPercent) / 100;
+        $payableAmount = $amount - $discountAmount;
 
         $invoice->update([
             'date' => $request->date,
             'invoice_no' => $request->invoice_no,
             'firm_id' => $request->firm_id,
             'salesperson_id' => $request->salesperson_id,
-            'amount' => $request->amount,
-            'status' => $request->status,
+            'amount' => $amount,
+            'discount_percent' => $discountPercent,
+            'discount_amount' => $discountAmount,
+            'payable_amount' => $payableAmount,
         ]);
 
         return response()->json([

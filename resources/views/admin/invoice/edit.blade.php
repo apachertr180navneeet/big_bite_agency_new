@@ -93,9 +93,47 @@
                                     step="0.01"
                                     min="0"
                                     name="amount"
+                                    id="amount"
                                     class="form-control"
                                     placeholder="Enter Amount"
                                     value="{{ old('amount', $invoice->amount) }}"
+                                >
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Discount %</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    name="discount_percent"
+                                    id="discount_percent"
+                                    class="form-control"
+                                    value="{{ old('discount_percent', $invoice->discount_percent) }}"
+                                >
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Discount Amount</label>
+                                <input
+                                    type="text"
+                                    name="discount_amount"
+                                    id="discount_amount"
+                                    class="form-control"
+                                    value="{{ old('discount_amount', $invoice->discount_amount) }}"
+                                    readonly
+                                >
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Payable Amount</label>
+                                <input
+                                    type="text"
+                                    name="payable_amount"
+                                    id="payable_amount"
+                                    class="form-control"
+                                    value="{{ old('payable_amount', $invoice->payable_amount) }}"
+                                    readonly
                                 >
                             </div>
                         </div>

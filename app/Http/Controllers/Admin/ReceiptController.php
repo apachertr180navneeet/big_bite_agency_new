@@ -23,35 +23,12 @@ class ReceiptController extends Controller
             'invoice:id,invoice_no',
         ]);
 
-        if ($request->has('search') && !empty($request->search['value'])) {
-            $search = $request->search['value'];
-
-            $query->where(function ($q) use ($search) {
-                $q->where('receipt_no', 'like', "%{$search}%")
-                    ->orWhere('date', 'like', "%{$search}%")
-                    ->orWhere('mode', 'like', "%{$search}%")
-                    ->orWhere('sales_person', 'like', "%{$search}%")
-                    ->orWhere('manager_status', 'like', "%{$search}%")
-                    ->orWhere('status', 'like', "%{$search}%")
-                    ->orWhereHas('firm', function ($firmQuery) use ($search) {
-                        $firmQuery->where('firm_name', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('invoice', function ($invoiceQuery) use ($search) {
-                        $invoiceQuery->where('invoice_no', 'like', "%{$search}%");
-                    });
-            });
-        }
-
         if ($request->filled('receipt_no')) {
             $query->where('receipt_no', 'like', '%' . $request->receipt_no . '%');
         }
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereBetween('date', [$request->date_from, $request->date_to]);
-        } elseif ($request->filled('date_from')) {
-            $query->whereDate('date', '>=', $request->date_from);
-        } elseif ($request->filled('date_to')) {
-            $query->whereDate('date', '<=', $request->date_to);
         }
 
         if ($request->filled('mode')) {
@@ -69,17 +46,13 @@ class ReceiptController extends Controller
         $totalRecords = Receipt::count();
         $filteredRecords = $query->count();
 
-        $start = max((int) $request->input('start', 0), 0);
+        $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 10);
 
-        $query = $query->orderBy('id', 'desc');
-
-        if ($length === -1) {
-            $receipts = $query->skip($start)->get();
-        } else {
-            $length = $length > 0 ? $length : 10;
-            $receipts = $query->skip($start)->take($length)->get();
-        }
+        $receipts = $query->orderBy('id', 'desc')
+            ->skip($start)
+            ->take($length)
+            ->get();
 
         $receipts = $receipts->map(function ($item) {
             $item->firm_name = optional($item->firm)->firm_name;
@@ -97,123 +70,76 @@ class ReceiptController extends Controller
 
     public function create()
     {
-        $customers = Customer::query()
-            ->where('status', 'active')
+        $customers = Customer::where('status', 'active')
             ->orderBy('firm_name')
-            ->get(['id', 'firm_name', 'discount']);
-
-        
+            ->get(['id', 'firm_name']);
 
         $generatedReceiptNo = $this->generateReceiptNo();
 
-        return view('admin.receipt.create', compact('customers','generatedReceiptNo'));
+        return view('admin.receipt.create', compact('customers', 'generatedReceiptNo'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'date' => 'required|date',
-            'receipt_no' => 'nullable|string|max:100|unique:receipts,receipt_no',
+            'receipt_no' => 'required|string|max:100|unique:receipts,receipt_no',
             'firm_id' => 'required|exists:customers,id',
             'invoice_id' => 'required|exists:invoices,id',
             'given_amount' => 'required|numeric|min:0.01',
             'mode' => 'nullable|string|max:100',
-            'manager_status' => 'nullable|in:pending,accpet,rejected',
-            'status' => 'nullable|in:pending,accpet,rejected',
         ]);
 
-        $discount = $request->discount;
+        [$customer, $invoice] = $this->resolveCustomerAndInvoice(
+            $request->firm_id,
+            $request->invoice_id
+        );
 
-        [$customer, $invoice] = $this->resolveCustomerAndInvoice($request->firm_id, $request->invoice_id);
-        [$invoiceAmount, $discountPercent, $payableAmount] = $this->invoiceFinancials($invoice, $customer , $discount);
+        $invoiceAmount = (float) $invoice->amount;
 
-        $totalPaidBefore = (float) Receipt::where('invoice_id', $invoice->id)->sum('given_amount');
-        $newTotalPaid = round($totalPaidBefore + (float) $request->given_amount, 2);
+        $totalPaidBefore = (float) Receipt::where('invoice_id', $invoice->id)
+            ->sum('given_amount');
 
-        if ($newTotalPaid > $payableAmount + 0.0001) {
+        $newTotalPaid = $totalPaidBefore + (float) $request->given_amount;
+
+        if ($newTotalPaid > $invoiceAmount) {
             throw ValidationException::withMessages([
-                'given_amount' => 'Payment exceeds pending invoice amount.',
+                'given_amount' => 'Payment exceeds invoice amount.',
             ]);
         }
 
-        $receiptNo = $request->filled('receipt_no') ? $request->receipt_no : $this->generateReceiptNo();
-
         $receipt = Receipt::create([
             'date' => $request->date,
-            'receipt_no' => $receiptNo,
+            'receipt_no' => $request->receipt_no,
             'firm_id' => $customer->id,
             'invoice_id' => $invoice->id,
             'amount' => $invoiceAmount,
             'given_amount' => $request->given_amount,
-            'discount' => $discountPercent,
-            'final_amount' => $payableAmount,
+            'final_amount' => $invoiceAmount,
             'sales_person' => optional($invoice->salesperson)->name,
             'mode' => $request->mode,
-            'manager_status' => $request->manager_status ?? 'pending',
-            'status' => $request->status ?? 'pending',
+            'manager_status' => 'pending',
+            'status' => 'pending',
         ]);
 
         $this->updateInvoiceStatus($invoice->id);
 
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => true,
-                'message' => 'Receipt added successfully',
-                'data' => $receipt,
-            ]);
-        }
-
-        return redirect()->route('admin.receipt.index')->with('success', 'Receipt added successfully');
-    }
-
-    public function delete($id)
-    {
-        $receipt = Receipt::findOrFail($id);
-        $invoiceId = $receipt->invoice_id;
-        $receipt->delete();
-
-        if ($invoiceId) {
-            $this->updateInvoiceStatus((int) $invoiceId);
-        }
-
         return response()->json([
             'status' => true,
-            'message' => 'Receipt deleted successfully',
+            'message' => 'Receipt added successfully',
+            'data' => $receipt,
         ]);
     }
 
-
-    public function changeStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,accpet,rejected',
-        ]);
-
-        $receipt = Receipt::findOrFail($id);
-        $receipt->status = $request->status;
-        $receipt->manager_status = $request->status;
-        $receipt->save();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Receipt status updated successfully',
-            'data' => [
-                'status' => $receipt->status,
-                'manager_status' => $receipt->manager_status,
-            ],
-        ]);
-    }
     public function edit($id)
     {
         $receipt = Receipt::findOrFail($id);
 
-        $customers = Customer::query()
-            ->where('status', 'active')
+        $customers = Customer::where('status', 'active')
             ->orderBy('firm_name')
-            ->get(['id', 'firm_name', 'discount']);
+            ->get(['id', 'firm_name']);
 
-        $invoices = Invoice::query()
-            ->with('salesperson:id,name')
+        $invoices = Invoice::with('salesperson:id,name')
             ->withSum('receipts as paid_amount', 'given_amount')
             ->orderBy('invoice_no')
             ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id']);
@@ -224,7 +150,6 @@ class ReceiptController extends Controller
     public function update(Request $request, $id)
     {
         $receipt = Receipt::findOrFail($id);
-        $oldInvoiceId = (int) $receipt->invoice_id;
 
         $request->validate([
             'date' => 'required|date',
@@ -232,23 +157,24 @@ class ReceiptController extends Controller
             'firm_id' => 'required|exists:customers,id',
             'invoice_id' => 'required|exists:invoices,id',
             'given_amount' => 'required|numeric|min:0.01',
-            'mode' => 'nullable|string|max:100',
-            'manager_status' => 'nullable|in:pending,accpet,rejected',
-            'status' => 'nullable|in:pending,accpet,rejected',
         ]);
 
-        [$customer, $invoice] = $this->resolveCustomerAndInvoice($request->firm_id, $request->invoice_id);
-        [$invoiceAmount, $discountPercent, $payableAmount] = $this->invoiceFinancials($invoice, $customer);
+        [$customer, $invoice] = $this->resolveCustomerAndInvoice(
+            $request->firm_id,
+            $request->invoice_id
+        );
 
-        $totalPaidOthers = (float) Receipt::where('invoice_id', $invoice->id)
+        $invoiceAmount = (float) $invoice->amount;
+
+        $totalPaidOthers = Receipt::where('invoice_id', $invoice->id)
             ->where('id', '!=', $receipt->id)
             ->sum('given_amount');
 
-        $newTotalPaid = round($totalPaidOthers + (float) $request->given_amount, 2);
+        $newTotalPaid = $totalPaidOthers + $request->given_amount;
 
-        if ($newTotalPaid > $payableAmount + 0.0001) {
+        if ($newTotalPaid > $invoiceAmount) {
             throw ValidationException::withMessages([
-                'given_amount' => 'Payment exceeds pending invoice amount.',
+                'given_amount' => 'Payment exceeds invoice amount.',
             ]);
         }
 
@@ -259,27 +185,35 @@ class ReceiptController extends Controller
             'invoice_id' => $invoice->id,
             'amount' => $invoiceAmount,
             'given_amount' => $request->given_amount,
-            'discount' => $discountPercent,
-            'final_amount' => $payableAmount,
+            'final_amount' => $invoiceAmount,
             'sales_person' => optional($invoice->salesperson)->name,
             'mode' => $request->mode,
-            'manager_status' => $request->manager_status ?? 'pending',
-            'status' => $request->status ?? 'pending',
         ]);
 
         $this->updateInvoiceStatus($invoice->id);
-        if ($oldInvoiceId && $oldInvoiceId !== (int) $invoice->id) {
-            $this->updateInvoiceStatus($oldInvoiceId);
-        }
 
         return response()->json([
             'status' => true,
             'message' => 'Receipt updated successfully',
-            'data' => $receipt,
         ]);
     }
 
-    private function resolveCustomerAndInvoice(int $firmId, int $invoiceId): array
+    public function delete($id)
+    {
+        $receipt = Receipt::findOrFail($id);
+        $invoiceId = $receipt->invoice_id;
+
+        $receipt->delete();
+
+        $this->updateInvoiceStatus($invoiceId);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Receipt deleted successfully',
+        ]);
+    }
+
+    private function resolveCustomerAndInvoice($firmId, $invoiceId)
     {
         $customer = Customer::findOrFail($firmId);
 
@@ -290,46 +224,36 @@ class ReceiptController extends Controller
 
         if (!$invoice) {
             throw ValidationException::withMessages([
-                'invoice_id' => 'Selected invoice does not belong to selected firm.',
+                'invoice_id' => 'Invoice does not belong to selected firm.',
             ]);
         }
 
         return [$customer, $invoice];
     }
 
-    private function invoiceFinancials(Invoice $invoice, Customer $customer, $discount): array
-    {
-        $invoiceAmount = round((float) $invoice->amount, 2);
-        $discountPercent = round((float) $discount, 2);
-        $payableAmount = round($invoiceAmount - (($invoiceAmount * $discountPercent) / 100), 2);
-
-        return [$invoiceAmount, $discountPercent, $payableAmount];
-    }
-
-    private function updateInvoiceStatus(int $invoiceId): void
+    private function updateInvoiceStatus($invoiceId)
     {
         $invoice = Invoice::find($invoiceId);
-        if (!$invoice) {
-            return;
-        }
 
-        $customer = Customer::find($invoice->firm_id);
-        $discountPercent = $customer ? (float) $customer->discount : 0;
+        if (!$invoice) return;
 
-        $invoiceAmount = round((float) $invoice->amount, 2);
-        $payableAmount = round($invoiceAmount - (($invoiceAmount * $discountPercent) / 100), 2);
-        $paid = (float) Receipt::where('invoice_id', $invoice->id)->sum('given_amount');
+        $invoiceAmount = (float) $invoice->amount;
 
-        $invoice->status = $paid + 0.0001 >= $payableAmount ? 'full_paid' : 'pending';
+        $paid = (float) Receipt::where('invoice_id', $invoice->id)
+            ->sum('given_amount');
+
+        $invoice->status = $paid >= $invoiceAmount
+            ? 'full_paid'
+            : 'pending';
+
         $invoice->save();
     }
 
-    private function generateReceiptNo(): string
+    private function generateReceiptNo()
     {
-        $lastReceipt = Receipt::query()
-            ->where('receipt_no', 'like', 'RCPT-%')
+        $lastReceipt = Receipt::where('receipt_no', 'like', 'RCPT-%')
             ->orderByDesc('id')
-            ->first(['receipt_no']);
+            ->first();
 
         $nextNumber = 1;
 
@@ -337,8 +261,19 @@ class ReceiptController extends Controller
             $nextNumber = ((int) $matches[1]) + 1;
         }
 
-        return 'RCPT-' . str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
+        return 'RCPT-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
     }
+
+    // public function getPendingInvoices($firm_id)
+    // {
+    //     $invoices = Invoice::with('salesperson:id,name')
+    //         ->withSum('receipts as paid_amount', 'given_amount')
+    //         ->where('firm_id', $firm_id)
+    //         ->where('status', 'pending')
+    //         ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id']);
+
+    //     return response()->json($invoices);
+    // }
 
 
     public function getPendingInvoices($firm_id)
@@ -346,39 +281,66 @@ class ReceiptController extends Controller
         $invoices = Invoice::with('salesperson:id,name')
             ->withSum('receipts as paid_amount', 'given_amount')
             ->where('firm_id', $firm_id)
-            ->where('status', 'pending') // only pending invoice
-            ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id']);
+            ->where('status', 'pending')
+            ->get([
+                'id',
+                'firm_id',
+                'invoice_no',
+                'amount',
+                'payable_amount',
+                'status',
+                'salesperson_id'
+            ]);
 
         return response()->json($invoices);
     }
 
 
-    public function getInvoiceDetail($id)
+    public function changeStatus(Request $request, $id)
     {
-        $invoice = Invoice::find($id);
+        $request->validate([
+            'status' => 'required|in:pending,accpet,rejected',
+        ]);
 
-        dd($invoice);
+        $receipt = Receipt::findOrFail($id);
 
-        if (!$invoice) {
-            return response()->json([
-                'status' => false
-            ]);
+        $receipt->status = $request->status;
+        $receipt->manager_status = $request->status;
+        $receipt->save();
+
+        /*
+        =============================
+        CHECK INVOICE PAYMENT STATUS
+        =============================
+        */
+
+        $invoice = Invoice::find($receipt->invoice_id);
+
+        if ($invoice) {
+
+            // Total paid from receipts
+            $totalPaid = Receipt::where('invoice_id', $invoice->id)
+                ->where('status', 'accpet') // only accepted payments
+                ->sum('given_amount');
+
+            $payableAmount = $invoice->payable_amount;
+
+            if ($totalPaid >= $payableAmount) {
+
+                $invoice->status = 'full_paid';
+
+            } else {
+
+                $invoice->status = 'pending';
+
+            }
+
+            $invoice->save();
         }
-
-        $totalAmount = $invoice->total_amount;
-        $discount = $invoice->discount ?? 0;
-        $paidAmount = $invoice->receipts_sum_given_amount ?? 0;
-
-        $remainingAmount = ($totalAmount - $discount) - $paidAmount;
 
         return response()->json([
             'status' => true,
-            'total_amount' => $totalAmount,
-            'discount' => $discount,
-            'paid_amount' => $paidAmount,
-            'remaining_amount' => $remainingAmount
+            'message' => 'Receipt status updated successfully'
         ]);
     }
 }
-
-
