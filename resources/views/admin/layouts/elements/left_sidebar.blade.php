@@ -42,12 +42,18 @@
 			</a>
 		</li>
 
-				<li class="menu-item {{ request()->is('admin/receipt') ? 'active' : ''}}">
+		<li class="menu-item {{ request()->is('admin/receipt') ? 'active' : ''}}">
 			<a href="{{route('admin.receipt.index')}}" class="menu-link">
 				<i class="menu-icon tf-icons bx bx-home-circle"></i>
 				<div data-i18n="Dashboard">Receipt</div>
 			</a>
 		</li>
 		
+		<li class="menu-item {{ request()->is('admin/sales-person-report') ? 'active' : ''}}">
+			<a href="{{route('admin.sales.person.report')}}" class="menu-link">
+				<i class="menu-icon tf-icons bx bx-home-circle"></i>
+				<div data-i18n="Dashboard">Salesman Reort</div>
+			</a>
+		</li>
 	</ul>
 </aside>

@@ -5,7 +5,8 @@ use App\Http\Controllers\Web\HomeController;
 
 use App\Http\Controllers\Admin\{
     AdminAuthController,
-    ReceiptController
+    ReceiptController,
+    ReportController
 };
 
 /*
@@ -64,6 +65,8 @@ Route::name('admin.')->prefix('admin')->group(function () {
                 Route::post('/update/{id}', [$controller, 'update'])->name('update');
             });
         }
+
+        Route::get('sales-person-report', [ReportController::class, 'salespersionreport'])->name('sales.person.report');
     });
 
 });
