@@ -13,6 +13,8 @@ use App\Models\Customer;
 use App\Models\Salesperson;
 use App\Models\Receipt;
 
+use Illuminate\Support\Facades\DB;
+
 class AdminAuthController extends Controller
 {
     
@@ -282,16 +284,37 @@ class AdminAuthController extends Controller
         $invoiceCount = Invoice::count();
 
         // Total Bill Amount
-        $totalBillAmount = Invoice::sum('amount');
+        $totalBillAmount = Invoice::sum('payable_amount');
 
         // Receipts
         $receiptCount = Receipt::count();
+
+        // Approved Receipt
+        $approvedReceiptCount = Receipt::where('status', 'accpet')->count();
+
+        // Unapproved Receipt
+        $unapprovedReceiptCount = Receipt::where('status', 'rejected')->count();
 
         // Total Received Amount
         $totalReceivedAmount = Receipt::sum('given_amount');
 
         // Total Outstanding Amount
         $totalOutstandingAmount = $totalBillAmount - $totalReceivedAmount;
+
+        $monthlyCollection = Receipt::select(
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('SUM(given_amount) as total')
+        )
+        ->whereYear('created_at', Carbon::now()->year)
+        ->groupBy('month')
+        ->pluck('total', 'month')
+        ->toArray();
+
+        $monthlyData = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $monthlyData[] = $monthlyCollection[$i] ?? 0;
+        }
 
         return view("admin.dashboard.index", compact(
             'salespersonCount',
@@ -301,8 +324,11 @@ class AdminAuthController extends Controller
             'invoiceCount',
             'totalBillAmount',
             'receiptCount',
+            'approvedReceiptCount',
+            'unapprovedReceiptCount',
             'totalReceivedAmount',
-            'totalOutstandingAmount'
+            'totalOutstandingAmount',
+            'monthlyData'
         ));
     }
 

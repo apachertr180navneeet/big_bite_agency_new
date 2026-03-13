@@ -83,7 +83,7 @@
                             </div>
                         </div>
                         <div id="growthChart"></div>
-                        <div class="text-center fw-medium pt-3 mb-2">78 Receipt</div>
+                        <div class="text-center fw-medium pt-3 mb-2">{{ $receiptCount }} Receipt</div>
                         <div
                             class="d-flex px-xxl-4 px-lg-2 p-4 gap-xxl-3 gap-lg-1 gap-3 justify-content-between">
                             <div class="d-flex">
@@ -93,7 +93,7 @@
                                 </div>
                                 <div class="d-flex flex-column">
                                     <small>Approved Receipt</small>
-                                    <h6 class="mb-0">32.5k</h6>
+                                    <h6 class="mb-0">{{ $approvedReceiptCount }}</h6>
                                 </div>
                             </div>
                             <div class="d-flex">
@@ -103,7 +103,7 @@
                                 </div>
                                 <div class="d-flex flex-column">
                                     <small>UnApproved Receipt</small>
-                                    <h6 class="mb-0">41k</h6>
+                                    <h6 class="mb-0">{{ $unapprovedReceiptCount }}</h6>
                                 </div>
                             </div>
                         </div>
@@ -171,4 +171,9 @@
 @endsection
 
 @section('script')
+<script>
+    var receiptCount = {{ $receiptCount ?? 0 }};
+    var monthlyCollection = @json($monthlyData);
+</script>
+<script src="{{asset('assets/admin/js/dashboards-analytics.js')}}"></script>
 @endsection

@@ -53,7 +53,6 @@
                 <script src="{{asset('assets/admin/js/main.js')}}"></script>
                 <script src="{{asset('assets/admin/js/dataTable.js')}}"></script>
                 <script src="{{asset('assets/admin/js/bootstrapDataTable.js')}}"></script>
-                <script src="{{asset('assets/admin/js/dashboards-analytics.js')}}"></script>
                 <script src="{{asset('assets/admin/js/moment.min.js')}}"></script>
                 <script async defer src="https://buttons.github.io/buttons.js"></script>
                 <!-- jQuery Validation -->
