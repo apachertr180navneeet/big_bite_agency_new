@@ -80,7 +80,6 @@
                                     <th>Given</th>
                                     <th>Final</th>
                                     <th>Mode</th>
-                                    <th>Manager Status</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>

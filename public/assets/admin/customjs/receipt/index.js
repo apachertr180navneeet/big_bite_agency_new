@@ -85,20 +85,35 @@ $(document).ready(function () {
                 },
 
                 {
-                    data: "manager_status",
-                    render: data => renderStatusBadge(data)
-                },
-
-                {
                     data: "status",
                     render: function (data, type, row) {
 
-                        return `
-                        <select class="form-select form-select-sm change-receipt-status" data-id="${row.id}">
-                            <option value="pending" ${data === "pending" ? "selected" : ""}>Pending</option>
-                            <option value="accpet" ${data === "accpet" ? "selected" : ""}>Accept</option>
-                            <option value="rejected" ${data === "rejected" ? "selected" : ""}>Rejected</option>
-                        </select>`;
+                        if (data === "pending") {
+
+                            return `
+                                <button class="btn btn-sm btn-success change-receipt-status"
+                                    data-id="${row.id}"
+                                    data-status="accpet">
+                                    Approve
+                                </button>
+
+                                <button class="btn btn-sm btn-danger change-receipt-status"
+                                    data-id="${row.id}"
+                                    data-status="rejected">
+                                    Reject
+                                </button>
+                            `;
+                        }
+
+                        if (data === "accpet") {
+                            return '<span class="badge bg-label-success">Approved</span>';
+                        }
+
+                        if (data === "rejected") {
+                            return '<span class="badge bg-label-danger">Rejected</span>';
+                        }
+
+                        return '<span class="badge bg-label-warning">Pending</span>';
                     }
                 },
 
@@ -254,16 +269,49 @@ $(document).ready(function () {
     =========================
     */
 
+    function getSelectedInvoiceData() {
+
+        const selected = $("#invoice_id").find(":selected");
+
+        return {
+            id: String(selected.val() || ""),
+            amount: parseFloat(selected.data("amount")) || 0,
+            payable: parseFloat(selected.data("payable")) || 0,
+            paid: parseFloat(selected.data("paid")) || 0,
+            salesPerson: selected.data("sales-person") || ""
+        };
+    }
+
+    function isEditMode() {
+        return $("#editReceiptForm").length > 0;
+    }
+
+    function getCurrentReceiptAdjustment(invoiceId) {
+
+        if (!isEditMode()) {
+            return 0;
+        }
+
+        const form = $("#editReceiptForm");
+        const currentInvoiceId = String(form.data("current-invoice-id") || "");
+        const currentGiven = parseFloat(form.data("current-given")) || 0;
+
+        return currentInvoiceId === String(invoiceId) ? currentGiven : 0;
+    }
+
     function loadInvoiceData() {
 
-        let selected = $("#invoice_id").find(":selected");
+        const invoice = getSelectedInvoiceData();
 
-        let amount = parseFloat(selected.data("amount")) || 0;
-        let payable = parseFloat(selected.data("payable")) || 0;
-        let salesPerson = selected.data("sales-person") || "";
+        if (!invoice.id) {
+            $("#amount").val("");
+            $("#remaining_amount").val("");
+            $("#sales_person").val("");
+            return;
+        }
 
-        $("#amount").val(amount.toFixed(2));
-        $("#sales_person").val(salesPerson);
+        $("#amount").val(invoice.amount.toFixed(2));
+        $("#sales_person").val(invoice.salesPerson);
 
         calculateRemaining();
     }
@@ -276,13 +324,20 @@ $(document).ready(function () {
 
     function calculateRemaining() {
 
-        let payable = parseFloat($("#invoice_id option:selected").data("payable")) || 0;
+        const invoice = getSelectedInvoiceData();
 
-        let given = parseFloat($("#given_amount").val()) || 0;
+        if (!invoice.id) {
+            $("#remaining_amount").val("");
+            return;
+        }
 
-        let remaining = payable - given;
+        const given = parseFloat($("#given_amount").val()) || 0;
+        const editableOutstanding = invoice.payable - invoice.paid + getCurrentReceiptAdjustment(invoice.id);
+        let remaining = editableOutstanding - given;
 
-        if (remaining < 0) remaining = 0;
+        if (remaining < 0) {
+            remaining = 0;
+        }
 
         $("#remaining_amount").val(remaining.toFixed(2));
     }
@@ -307,4 +362,122 @@ $(document).ready(function () {
         loadInvoiceData();
     }
 
+
+    /*
+    =========================
+    CHANGE RECEIPT STATUS
+    =========================
+    */
+
+    $(document).on("click", ".change-receipt-status", function () {
+
+        const id = $(this).data("id");
+        const status = $(this).data("status");
+
+        Swal.fire({
+            title: "Are you sure?",
+            text: "You want to change receipt status?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes, continue"
+        }).then((result) => {
+
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+
+                url: changeReceiptStatusUrl.replace(":id", id),
+                type: "POST",
+
+                data: {
+                    status: status
+                },
+
+                success: function (response) {
+
+                    toastr.success(response.message || "Status updated");
+
+                    receiptTable.ajax.reload(null, false);
+
+                },
+
+                error: function () {
+
+                    toastr.error("Something went wrong");
+
+                }
+
+            });
+
+        });
+
+    });
+
+
+     /*
+    =========================
+    LOAD CUSTOMER INVOICES
+    =========================
+    */
+
+    $("#firm_id").on("change", function () {
+
+        let firm_id = $(this).val();
+        let invoiceDropdown = $("#invoice_id");
+
+        invoiceDropdown.html('<option value="">Loading...</option>');
+
+        if (firm_id !== "") {
+
+            $.ajax({
+
+                url: "/get-pending-invoices/" + firm_id,
+                type: "GET",
+
+                success: function (data) {
+
+                    invoiceDropdown.html('<option value="">Select Invoice</option>');
+
+                    if (data.length > 0) {
+
+                        $.each(data, function (index, invoice) {
+
+                            let paid = invoice.paid_amount ?? 0;
+                            let payable = invoice.payable_amount ?? 0;
+
+                            let remaining = payable - paid;
+
+                            invoiceDropdown.append(`
+                                <option value="${invoice.id}" 
+                                    data-amount="${invoice.amount}"
+                                    data-payable="${payable}"
+                                    data-paid="${paid}"
+                                    data-sales-person="${invoice.salesperson ? invoice.salesperson.name : ''}">
+                                    ${invoice.invoice_no} (Remaining: ${remaining})
+                                </option>
+                            `);
+
+                        });
+
+                    } else {
+
+                        invoiceDropdown.html('<option value="">No Pending Invoice</option>');
+
+                    }
+
+                }
+
+            });
+
+        } else {
+
+            invoiceDropdown.html('<option value="">Select Invoice</option>');
+
+        }
+
+    });
+
+
+
 });
+
