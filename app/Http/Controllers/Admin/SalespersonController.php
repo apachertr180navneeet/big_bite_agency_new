@@ -111,9 +111,9 @@ class SalespersonController extends Controller
         --------------------------------------------------------------------*/
         $request->validate([
             'name' => 'required|min:3|max:50',
-            'salesperson_code' => 'required|digits_between:10,15|unique:salespersons,salesperson_code',
+            'salesperson_code' => 'required|digits_between:3,15|unique:salespersons,salesperson_code',
             'mobile' => 'required|digits_between:10,15|unique:salespersons,mobile',
-            'email' => 'required|email|unique:salespersons,email',
+            'email' => 'nullable|email|unique:salespersons,email',
             'password' => 'required|min:6',
         ]);
 
@@ -226,7 +226,7 @@ class SalespersonController extends Controller
             'salesperson_code' => 'required',
             'name'             => 'required|min:3|max:50',
             'mobile'           => 'required|digits_between:10,15|unique:salespersons,mobile,' . $id,
-            'email'            => 'required|email|unique:salespersons,email,' . $id,
+            'email'            => 'nullable|email|unique:salespersons,email,' . $id,
             'password'         => 'nullable|min:6',
             'address'          => 'nullable',
             'dob'              => 'nullable|date',

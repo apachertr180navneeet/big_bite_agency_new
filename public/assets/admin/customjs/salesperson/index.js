@@ -34,7 +34,6 @@ $(document).ready(function () {
                 { data: "salesperson_code", searchable: true },
                 { data: "name", searchable: true },
                 { data: "mobile", searchable: false },
-                { data: "email", searchable: true },
 
                 {
                     data: "status",
@@ -117,7 +116,7 @@ $(document).ready(function () {
                 salesperson_code: { required: true },
                 name: { required: true, minlength: 3, maxlength: 50 },
                 mobile: { required: true, digits: true, minlength: 10, maxlength: 15 },
-                email: { required: true, email: true },
+                email: { required: false, email: true },
                 password: { required: true, minlength: 6 }
             },
 
@@ -132,7 +131,6 @@ $(document).ready(function () {
                     digits: "Only numeric values allowed"
                 },
                 email: {
-                    required: "Email is required",
                     email: "Enter a valid email address"
                 },
                 password: {
@@ -386,10 +384,6 @@ $(document).ready(function () {
                 $('.name_error').text('Name is required.');
                 isValid = false;
             } 
-            else if (!/^[A-Za-z ]+$/.test(name)) {
-                $('.name_error').text('Name should contain only letters and spaces.');
-                isValid = false;
-            } 
             else if (name.length < 3 || name.length > 50) {
                 $('.name_error').text('Name must be between 3 and 50 characters.');
                 isValid = false;
@@ -411,20 +405,6 @@ $(document).ready(function () {
             } 
             else if (mobile.length < 10 || mobile.length > 15) {
                 $('.mobile_error').text('Mobile number must be between 10 and 15 digits.');
-                isValid = false;
-            }
-
-            // ============================================================
-            // EMAIL VALIDATION
-            // - Required
-            // - Proper email format
-            // ============================================================
-            if (email === '') {
-                $('.email_error').text('Email is required.');
-                isValid = false;
-            } 
-            else if (!/^\S+@\S+\.\S+$/.test(email)) {
-                $('.email_error').text('Enter a valid email address.');
                 isValid = false;
             }
 
