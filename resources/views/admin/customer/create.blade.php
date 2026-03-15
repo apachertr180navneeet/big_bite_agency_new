@@ -11,7 +11,7 @@
     <div class="row">
         <div class="col-md-6 text-start">
             <h5 class="py-2 mb-2">
-                <span class="text-primary fw-light">Customer Management</span>
+                <span class="text-primary fw-light">Customer Firms</span>
             </h5>
         </div>
 
@@ -34,7 +34,7 @@
                     <!-- Form Heading -->
                     <div class="mb-4">
                         <h5 class="card-title">
-                            <span class="text-primary fw-bold">Add Customer</span>
+                            <span class="text-primary fw-bold">Add Firms</span>
                         </h5>
                         <hr>
                     </div>
@@ -55,17 +55,6 @@
                                 @enderror
                             </div>
 
-                            <!-- Customer Name -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                <input type="text" name="name" class="form-control"
-                                       placeholder="Enter Customer Name"
-                                       value="{{ old('name') }}">
-                                @error('name')
-                                    <small class="text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-
                             <!-- Phone -->
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Phone <span class="text-danger">*</span></label>
@@ -73,29 +62,6 @@
                                        placeholder="Enter Phone Number"
                                        value="{{ old('phone') }}">
                                 @error('phone')
-                                    <small class="text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-
-                            <!-- GST Number -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">GST Number</label>
-                                <input type="text" name="gst_no" class="form-control"
-                                       placeholder="Enter GST Number"
-                                       value="{{ old('gst_no') }}">
-                                @error('gst_no')
-                                    <small class="text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-
-                            <!-- Discount -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Discount (%)</label>
-                                <input type="number" name="discount" class="form-control"
-                                       placeholder="Enter Discount"
-                                       value="{{ old('discount', 0) }}"
-                                       min="0" max="100" step="0.01">
-                                @error('discount')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
                             </div>

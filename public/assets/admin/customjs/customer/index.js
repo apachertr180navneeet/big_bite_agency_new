@@ -38,60 +38,36 @@ $(document).ready(function () {
             // Define table columns
             columns: [
 
-                // Firm Name Column
+                // Firm Name
                 {
                     data: "firm_name",
                     searchable: true
                 },
 
-                // Customer Name Column
-                {
-                    data: "name",
-                    searchable: true
-                },
-
-                // Phone Column
+                // Phone
                 {
                     data: "phone",
                     searchable: true
                 },
 
-                // GST Number Column
-                {
-                    data: "gst_no",
-                    searchable: true
-                },
-
-                // Discount Column
-                {
-                    data: "discount",
-                    searchable: false,
-                    render: function (data) {
-                        return data + " %"; // Append percentage symbol
-                    }
-                },
-
-                // Status Column
+                // Status
                 {
                     data: "status",
                     searchable: false,
                     render: function (data) {
-
-                        // Display badge based on status
                         return data === "active"
                             ? '<span class="badge bg-label-success">Active</span>'
                             : '<span class="badge bg-label-danger">Inactive</span>';
                     }
                 },
 
-                // Action Buttons Column
+                // Action
                 {
                     data: "id",
                     searchable: false,
                     orderable: false,
                     render: function (data, type, row) {
 
-                        // Status Toggle Button
                         const statusBtn = `
                             <button class="btn btn-sm ${row.status === 'inactive' ? 'btn-success' : 'btn-danger'} change-status me-1"
                                 data-id="${data}"
@@ -100,7 +76,6 @@ $(document).ready(function () {
                             </button>
                         `;
 
-                        // Edit Button
                         const editBtn = `
                             <a href="${editCustomerUrl.replace(':id', data)}"
                                 class="btn btn-sm btn-warning me-1">
@@ -108,7 +83,6 @@ $(document).ready(function () {
                             </a>
                         `;
 
-                        // Delete Button
                         const deleteBtn = `
                             <button class="btn btn-sm btn-danger delete-customer"
                                 data-id="${data}">
@@ -116,21 +90,16 @@ $(document).ready(function () {
                             </button>
                         `;
 
-                        // Return all action buttons
                         return `${statusBtn}${editBtn}${deleteBtn}`;
                     }
                 }
             ],
 
-            // Set manual column widths
             columnDefs: [
-                { width: "18%", targets: 0 }, // Firm Name
-                { width: "15%", targets: 1 }, // Name
-                { width: "15%", targets: 2 }, // Phone
-                { width: "15%", targets: 3 }, // GST
-                { width: "10%", targets: 4 }, // Discount
-                { width: "10%", targets: 5 }, // Status
-                { width: "17%", targets: 6 }  // Action
+                { width: "30%", targets: 0 }, // Firm Name
+                { width: "25%", targets: 1 }, // Phone
+                { width: "15%", targets: 2 }, // Status
+                { width: "30%", targets: 3 }  // Action
             ]
 
         });
@@ -177,27 +146,11 @@ $(document).ready(function () {
                     maxlength: 100
                 },
 
-                name: {
-                    required: true,
-                    minlength: 3,
-                    maxlength: 50
-                },
-
                 phone: {
                     required: true,
                     digits: true,
                     minlength: 10,
                     maxlength: 15
-                },
-
-                gst_no: {
-                    maxlength: 20
-                },
-
-                discount: {
-                    number: true,
-                    min: 0,
-                    max: 100
                 },
             },
 
@@ -207,21 +160,10 @@ $(document).ready(function () {
                     required: "Firm name is required"
                 },
 
-                name: {
-                    required: "Customer name is required",
-                    minlength: "Minimum 3 characters required"
-                },
-
                 phone: {
                     required: "Phone number is required",
                     digits: "Only numeric values allowed",
                     minlength: "Minimum 10 digits required"
-                },
-
-                discount: {
-                    number: "Only numeric value allowed",
-                    min: "Minimum discount is 0",
-                    max: "Maximum discount is 100"
                 },
             },
 
@@ -457,31 +399,11 @@ $(document).ready(function () {
         // ============================================================
         // Get Input Field Values (Trim removes extra spaces)
         // ============================================================
-        let name = $('input[name="name"]').val().trim();
         let firmName = $('input[name="firm_name"]').val().trim();
         let phone = $('input[name="phone"]').val().trim();
-        let gstNo = $('input[name="gst_no"]').val().trim();
-        let discount = $('input[name="discount"]').val().trim();
 
         // Flag to check if form is valid
         let isValid = true;
-
-        // ============================================================
-        // NAME VALIDATION
-        // - Required
-        // - Only alphabets and spaces
-        // - Min 3 characters
-        // - Max 50 characters
-        // ============================================================
-        if (name === '') {
-            $('.name_error').text('Name is required.');
-            isValid = false;
-        }
-        else if (name.length < 3 || name.length > 50) {
-            $('.name_error').text('Name must be between 3 and 50 characters.');
-            isValid = false;
-        }
-
         // ============================================================
         // FIRM NAME VALIDATION
         // - Required
@@ -513,28 +435,6 @@ $(document).ready(function () {
         else if (phone.length < 10 || phone.length > 15) {
             $('.phone_error').text('Phone number must be between 10 and 15 digits.');
             isValid = false;
-        }
-
-        // ============================================================
-        // GST VALIDATION
-        // ============================================================
-        if (gstNo.length > 20) {
-            $('.gst_no_error').text('GST number must not exceed 20 characters.');
-            isValid = false;
-        }
-
-        // ============================================================
-        // DISCOUNT VALIDATION
-        // ============================================================
-        if (discount !== '') {
-            let discountValue = parseFloat(discount);
-            if (isNaN(discountValue)) {
-                $('.discount_error').text('Discount must be a valid number.');
-                isValid = false;
-            } else if (discountValue < 0 || discountValue > 100) {
-                $('.discount_error').text('Discount must be between 0 and 100.');
-                isValid = false;
-            }
         }
 
         // ============================================================

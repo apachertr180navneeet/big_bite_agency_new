@@ -11,7 +11,7 @@
     <div class="row">
         <div class="col-md-6 text-start">
             <h5 class="py-2 mb-2">
-                <span class="text-primary fw-light">Customer Management</span>
+                <span class="text-primary fw-light">Firm Management</span>
             </h5>
         </div>
 
@@ -20,7 +20,7 @@
                 href="{{route('admin.customer.create')}}" 
                 class="btn btn-primary"
             >
-                Add Customer
+                Add Firms
             </a>
         </div>
     </div>
@@ -34,22 +34,16 @@
                         <table class="table table-bordered" id="customerTable" style="width:100%">
                             
                             <colgroup>
-                                <col style="width:20%">  <!-- Firm Name -->
-                                <col style="width:15%">  <!-- Name -->
-                                <col style="width:15%">  <!-- Phone -->
-                                <col style="width:15%">  <!-- GST No -->
-                                <col style="width:10%">  <!-- Discount -->
-                                <col style="width:10%">  <!-- Status -->
-                                <col style="width:15%">  <!-- Action -->
+                                <col style="width:30%">  <!-- Firm Name -->
+                                <col style="width:25%">  <!-- Phone -->
+                                <col style="width:15%">  <!-- Status -->
+                                <col style="width:30%">  <!-- Action -->
                             </colgroup>
 
                             <thead>
                                 <tr>
                                     <th>Firm Name</th>
-                                    <th>Name</th>
                                     <th>Phone</th>
-                                    <th>GST No</th>
-                                    <th>Discount (%)</th>
                                     <th>Status</th>
                                     <th class="text-center">Action</th>
                                 </tr>

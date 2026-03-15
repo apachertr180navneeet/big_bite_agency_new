@@ -46,32 +46,10 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                                <input type="text" name="name" class="form-control"
-                                       value="{{ old('name', $customer->name) }}">
-                                <small class="text-danger error-text name_error"></small>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Phone <span class="text-danger">*</span></label>
                                 <input type="text" name="phone" class="form-control"
                                        value="{{ old('phone', $customer->phone) }}">
                                 <small class="text-danger error-text phone_error"></small>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">GST Number</label>
-                                <input type="text" name="gst_no" class="form-control"
-                                       value="{{ old('gst_no', $customer->gst_no) }}">
-                                <small class="text-danger error-text gst_no_error"></small>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Discount (%)</label>
-                                <input type="number" name="discount" class="form-control"
-                                       value="{{ old('discount', $customer->discount) }}"
-                                       min="0" max="100" step="0.01">
-                                <small class="text-danger error-text discount_error"></small>
                             </div>
                         </div>
 

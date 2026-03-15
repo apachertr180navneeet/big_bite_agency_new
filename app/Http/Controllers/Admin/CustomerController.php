@@ -102,18 +102,12 @@ class CustomerController extends Controller
     {
         $request->validate([
             'firm_name' => 'required|string|max:100',
-            'name' => 'required|string|min:3|max:50',
             'phone' => 'required|digits_between:10,15|unique:customers,phone',
-            'gst_no' => 'nullable|string|max:20',
-            'discount' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $customer = Customer::create([
             'firm_name' => $request->firm_name,
-            'name' => $request->name,
             'phone' => $request->phone,
-            'gst_no' => $request->gst_no,
-            'discount' => $request->discount ?? 0,
         ]);
 
         return response()->json([
@@ -174,11 +168,7 @@ class CustomerController extends Controller
 
         $request->validate([
             'firm_name' => 'required|string|max:100',
-            'name' => 'required|string|min:3|max:50',
             'phone' => 'required|digits_between:10,15|unique:customers,phone,' . $id,
-            'gst_no' => 'nullable|string|max:20',
-            'discount' => 'nullable|numeric|min:0|max:100',
-            'status' => 'nullable|in:active,inactive',
         ]);
 
         $customer->update([

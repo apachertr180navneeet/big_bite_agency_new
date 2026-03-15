@@ -31,7 +31,7 @@
 		<li class="menu-item {{ request()->is('admin/customer') ? 'active' : ''}}">
 			<a href="{{route('admin.customer.index')}}" class="menu-link">
 				<i class="menu-icon tf-icons bx bx-home-circle"></i>
-				<div data-i18n="Dashboard">Customer</div>
+				<div data-i18n="Dashboard">Firms</div>
 			</a>
 		</li>
 

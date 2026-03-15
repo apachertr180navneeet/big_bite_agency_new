@@ -320,12 +320,12 @@ class AdminAuthController extends Controller
             'invoices.*',
             'customers.firm_name as firm_name',
             'salespersons.name as salesman_name',
-            DB::raw('DATEDIFF(NOW(), invoices.created_at) as pending_days')
+            DB::raw('DATEDIFF(NOW(), invoices.date) as pending_days')
             )
             ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
             ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
             ->where('invoices.status', 'pending')
-            ->orderBy('invoices.created_at', 'asc') // oldest first
+            ->orderBy('invoices.date', 'asc') // oldest first
             ->limit(20)
             ->get();
 
