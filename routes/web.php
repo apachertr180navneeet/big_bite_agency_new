@@ -9,6 +9,10 @@ use App\Http\Controllers\Admin\{
     ReportController
 };
 
+use App\Http\Controllers\User\{
+    AuthController,
+};
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -72,14 +76,46 @@ Route::name('admin.')->prefix('admin')->group(function () {
 
 });
 
-// Ajax Route
-Route::get('/get-pending-invoices/{firm_id}', [ReceiptController::class, 'getPendingInvoices'])->name('get.pending.invoices');
 
-Route::get('/get-invoice-detail/{id}', [ReceiptController::class, 'getInvoiceDetail'])->name('get.invoice.detail');
+Route::name('user.')->prefix('user')->group(function () {
+    Route::get('/', [AuthController::class, 'index']);
+
+    Route::get('login', [AuthController::class, 'login'])->name('login');
+
+    Route::post('login', [AuthController::class, 'postLogin'])->name('login.post');
+
+    Route::get('forget-password', [AuthController::class, 'showForgetPasswordForm'])->name('forget.password.get');
+
+    Route::post('forget-password', [AuthController::class, 'submitForgetPasswordForm'])->name('forget.password.post');
+
+    Route::get('reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('reset.password.get');
+
+    Route::post('reset-password', [AuthController::class, 'submitResetPasswordForm'])->name('reset.password.post');
+
+    Route::middleware(['user'])->group(function () {
+    	Route::get('dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+
+        Route::get('change-password', [AuthController::class, 'changePassword'])->name('change.password');
+
+        Route::post('update-password', [AuthController::class, 'updatePassword'])->name('update.password');
+
+        Route::get('logout', [AuthController::class, 'logout'])->name('logout');
+
+        Route::get('profile', [AuthController::class, 'profile'])->name('profile');
+
+        Route::post('profile', [AuthController::class, 'updateProfile'])->name('update.profile');
+    });
+
+});
 
 Route::middleware(['auth'])->group(function () {
 
 });
 
+
+// Ajax Route
+Route::get('/get-pending-invoices/{firm_id}', [ReceiptController::class, 'getPendingInvoices'])->name('get.pending.invoices');
+
+Route::get('/get-invoice-detail/{id}', [ReceiptController::class, 'getInvoiceDetail'])->name('get.invoice.detail');
 
 

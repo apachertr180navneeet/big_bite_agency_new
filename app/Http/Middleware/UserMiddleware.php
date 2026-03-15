@@ -17,15 +17,15 @@ class UserMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if(Auth::user()) {
-            $user = Auth::user();
-            if($user->role == "user") {
+        if (Auth::guard('sales')->check()) {
+            $user = Auth::guard('sales')->user();
+            if ($user->status === 'active') {
                 return $next($request);
             }else{
                 return back()->with("error","Opps! You do not have access this");
             }
         }else{
-            return redirect()->route('login.get');
+            return redirect()->route('user.login');
         }
     }
 }
