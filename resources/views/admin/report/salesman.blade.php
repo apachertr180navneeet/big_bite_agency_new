@@ -70,7 +70,7 @@
                                         <td>{{ $report->invoice_no }}</td>
                                         <td>{{ $report->firm_name }}</td>
                                         <td>{{ $report->salesman_name }}</td>
-                                        <td>{{ number_format($report->payable_amount,2) }}</td>
+                                        <td>{{ number_format($report->remaining_amount,2) }}</td>
                                     </tr>
                                 @empty
                                     <tr>

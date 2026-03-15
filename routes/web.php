@@ -67,6 +67,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
         }
 
         Route::get('sales-person-report', [ReportController::class, 'salespersionreport'])->name('sales.person.report');
+         Route::get('cash-report', [ReportController::class, 'caashReport'])->name('cash.report');
     });
 
 });

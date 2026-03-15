@@ -55,5 +55,12 @@
 				<div data-i18n="Dashboard">Salesman Reort</div>
 			</a>
 		</li>
+
+		<li class="menu-item {{ request()->is('admin/cash-report') ? 'active' : ''}}">
+			<a href="{{route('admin.cash.report')}}" class="menu-link">
+				<i class="menu-icon tf-icons bx bx-home-circle"></i>
+				<div data-i18n="Dashboard">Cash Reort</div>
+			</a>
+		</li>
 	</ul>
 </aside>
