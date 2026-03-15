@@ -26,7 +26,7 @@ class Invoice extends Model
 
     public function firm()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class, 'firm_id');
     }
 
     public function salesperson()

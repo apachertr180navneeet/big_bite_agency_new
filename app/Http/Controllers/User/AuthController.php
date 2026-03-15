@@ -9,10 +9,11 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
-use App\Models\Salesperson;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
+use App\Models\Salesperson;
+use App\Models\Invoice;
 
 class AuthController extends Controller
 {
@@ -145,7 +146,25 @@ class AuthController extends Controller
      */
     public function dashboard()
     {   
-        return view('user.dashboard.index');
+        $salesperson = Auth::guard('sales')->user();
+
+        $pendingInvoices = Invoice::with('firm:id,firm_name')
+            ->withSum('receipts as paid_amount', 'given_amount')
+            ->where('salesperson_id', $salesperson->id)
+            ->where('status','pending')
+            ->orderBy('invoices.date', 'asc') // oldest first
+            ->get()
+            ->map(function ($invoice) {
+                $paidAmount = (float) ($invoice->paid_amount ?? 0);
+                $payableAmount = (float) $invoice->payable_amount;
+                $invoice->remaining_amount = max($payableAmount - $paidAmount, 0);
+                return $invoice;
+            })
+            ->filter(function ($invoice) {
+                return $invoice->remaining_amount > 0;
+            })
+            ->values();
+        return view('user.dashboard.index', compact('pendingInvoices'));
     }
 
 

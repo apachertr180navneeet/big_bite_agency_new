@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\{
 
 use App\Http\Controllers\User\{
     AuthController,
+    ReceiptController as UserReceiptController,
 };
 
 /*
@@ -94,6 +95,9 @@ Route::name('user.')->prefix('user')->group(function () {
 
     Route::middleware(['user'])->group(function () {
     	Route::get('dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+        Route::get('receipt/create', [UserReceiptController::class, 'create'])->name('receipt.create');
+        Route::post('receipt/store', [UserReceiptController::class, 'store'])->name('receipt.store');
+        Route::get('receipt/pending-invoices/{firm_id}', [UserReceiptController::class, 'getPendingInvoices'])->name('receipt.pending.invoices');
 
         Route::get('change-password', [AuthController::class, 'changePassword'])->name('change.password');
 
@@ -117,5 +121,4 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/get-pending-invoices/{firm_id}', [ReceiptController::class, 'getPendingInvoices'])->name('get.pending.invoices');
 
 Route::get('/get-invoice-detail/{id}', [ReceiptController::class, 'getInvoiceDetail'])->name('get.invoice.detail');
-
 

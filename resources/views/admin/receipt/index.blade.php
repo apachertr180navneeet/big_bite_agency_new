@@ -101,7 +101,7 @@
     const createReceiptUrl = "{{ route('admin.receipt.create') }}";
     const deleteReceiptUrl = "{{ route('admin.receipt.delete', ':id') }}";
     const editReceiptUrl = "{{ route('admin.receipt.edit', ':id') }}";
-    const updateReceiptStatusUrl = "{{ route('admin.receipt.status', ':id') }}";
+    const changeReceiptStatusUrl = "{{ route('admin.receipt.status', ':id') }}";
 </script>
 <script src="{{ asset('assets/admin/customjs/receipt/index.js') }}"></script>
 @endsection
