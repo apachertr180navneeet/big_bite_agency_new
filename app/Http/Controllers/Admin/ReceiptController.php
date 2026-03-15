@@ -88,6 +88,7 @@ class ReceiptController extends Controller
             'invoice_id' => 'required|exists:invoices,id',
             'given_amount' => 'required|numeric|min:0.01',
             'mode' => 'nullable|string|max:100',
+            'remark' => 'nullable|string|max:100',
         ]);
 
         [$customer, $invoice] = $this->resolveCustomerAndInvoice(
@@ -120,6 +121,7 @@ class ReceiptController extends Controller
             'mode' => $request->mode,
             'manager_status' => 'pending',
             'status' => 'pending',
+            'remark' => $request->remark
         ]);
 
         $this->updateInvoiceStatus($invoice->id);
@@ -142,7 +144,7 @@ class ReceiptController extends Controller
         $invoices = Invoice::with('salesperson:id,name')
             ->withSum('receipts as paid_amount', 'given_amount')
             ->orderBy('invoice_no')
-            ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id']);
+            ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id','remark']);
 
         return view('admin.receipt.edit', compact('receipt', 'customers', 'invoices'));
     }
@@ -157,6 +159,7 @@ class ReceiptController extends Controller
             'firm_id' => 'required|exists:customers,id',
             'invoice_id' => 'required|exists:invoices,id',
             'given_amount' => 'required|numeric|min:0.01',
+            'remark' => 'nullable|string|max:100',
         ]);
 
         [$customer, $invoice] = $this->resolveCustomerAndInvoice(
@@ -188,6 +191,7 @@ class ReceiptController extends Controller
             'final_amount' => $invoiceAmount,
             'sales_person' => optional($invoice->salesperson)->name,
             'mode' => $request->mode,
+            'remark' => $request->remark,
         ]);
 
         $this->updateInvoiceStatus($invoice->id);
@@ -263,17 +267,6 @@ class ReceiptController extends Controller
 
         return 'RCPT-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
     }
-
-    // public function getPendingInvoices($firm_id)
-    // {
-    //     $invoices = Invoice::with('salesperson:id,name')
-    //         ->withSum('receipts as paid_amount', 'given_amount')
-    //         ->where('firm_id', $firm_id)
-    //         ->where('status', 'pending')
-    //         ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id']);
-
-    //     return response()->json($invoices);
-    // }
 
 
     public function getPendingInvoices($firm_id)

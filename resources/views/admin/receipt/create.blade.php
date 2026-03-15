@@ -37,7 +37,7 @@
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Receipt No. <span class="text-danger">*</span></label>
-                                <input type="text" name="receipt_no" id="receipt_no" class="form-control" value="{{ old('receipt_no', $generatedReceiptNo) }}" readonly>
+                                <input type="text" name="receipt_no" id="receipt_no" class="form-control" value="{{ old('receipt_no', $generatedReceiptNo) }}">
                             </div>
 
                             <div class="col-md-4 mb-3">
@@ -85,9 +85,14 @@
                                     <option value="">Select Mode</option>
                                     <option value="cash" {{ old('mode') === 'cash' ? 'selected' : '' }}>Cash</option>
                                     <option value="upi" {{ old('mode') === 'upi' ? 'selected' : '' }}>UPI</option>
-                                    <option value="bank" {{ old('mode') === 'bank' ? 'selected' : '' }}>Bank</option>
-                                    <option value="card" {{ old('mode') === 'card' ? 'selected' : '' }}>Card</option>
+                                    <option value="bank" {{ old('mode') === 'rtgs' ? 'selected' : '' }}>RTGS / NEFT</option>
+                                    <option value="card" {{ old('mode') === 'chq' ? 'selected' : '' }}>chaque</option>
                                 </select>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Remark</label>
+                                <input type="text" name="remark" id="remark" class="form-control" placeholder="Enter Remark" value="{{ old('remark') }}">
                             </div>
                         </div>
 

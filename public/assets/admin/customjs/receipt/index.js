@@ -8,6 +8,12 @@ $(document).ready(function () {
         }
     });
 
+    /*
+    =========================
+    STATUS BADGE
+    =========================
+    */
+
     function renderStatusBadge(value) {
 
         if (value === "accpet") {
@@ -60,44 +66,35 @@ $(document).ready(function () {
 
                 {
                     data: "amount",
-                    render: function (data) {
-                        return Number(data || 0).toFixed(2);
-                    }
+                    render: data => Number(data || 0).toFixed(2)
                 },
 
                 {
                     data: "given_amount",
-                    render: function (data) {
-                        return Number(data || 0).toFixed(2);
-                    }
+                    render: data => Number(data || 0).toFixed(2)
                 },
 
                 {
                     data: "final_amount",
-                    render: function (data) {
-                        return Number(data || 0).toFixed(2);
-                    }
+                    render: data => Number(data || 0).toFixed(2)
                 },
 
                 {
                     data: "mode",
-                    render: function (data) {
-                        return data ? data.toUpperCase() : "-";
-                    }
+                    render: data => data ? data.toUpperCase() : "-"
                 },
 
                 {
                     data: "manager_status",
-                    render: function (data) {
-                        return renderStatusBadge(data);
-                    }
+                    render: data => renderStatusBadge(data)
                 },
 
                 {
                     data: "status",
                     render: function (data, type, row) {
 
-                        return `<select class="form-select form-select-sm change-receipt-status" data-id="${row.id}">
+                        return `
+                        <select class="form-select form-select-sm change-receipt-status" data-id="${row.id}">
                             <option value="pending" ${data === "pending" ? "selected" : ""}>Pending</option>
                             <option value="accpet" ${data === "accpet" ? "selected" : ""}>Accept</option>
                             <option value="rejected" ${data === "rejected" ? "selected" : ""}>Rejected</option>
@@ -110,19 +107,12 @@ $(document).ready(function () {
                     orderable: false,
                     render: function (data) {
 
-                        const editBtn = `
+                        return `
                         <a href="${editReceiptUrl.replace(":id", data)}"
-                        class="btn btn-sm btn-warning me-1">
-                        Edit
-                        </a>`;
+                        class="btn btn-sm btn-warning me-1">Edit</a>
 
-                        const deleteBtn = `
                         <button class="btn btn-sm btn-danger delete-receipt"
-                        data-id="${data}">
-                        Delete
-                        </button>`;
-
-                        return `${editBtn}${deleteBtn}`;
+                        data-id="${data}">Delete</button>`;
                     }
                 }
 
@@ -154,11 +144,9 @@ $(document).ready(function () {
 
             if (!result.isConfirmed) return;
 
-            const url = deleteReceiptUrl.replace(":id", id);
-
             $.ajax({
 
-                url: url,
+                url: deleteReceiptUrl.replace(":id", id),
                 type: "DELETE",
 
                 success: function (response) {
@@ -166,10 +154,13 @@ $(document).ready(function () {
                     toastr.success(response.message || "Receipt deleted");
 
                     receiptTable.ajax.reload(null, false);
+
                 },
 
                 error: function () {
+
                     toastr.error("Something went wrong");
+
                 }
 
             });
@@ -184,9 +175,11 @@ $(document).ready(function () {
     =========================
     */
 
-    if ($("#receiptForm").length) {
+    if ($("#receiptForm").length || $("#editReceiptForm").length) {
 
-        $("#receiptForm").validate({
+        const form = $("#receiptForm").length ? $("#receiptForm") : $("#editReceiptForm");
+
+        form.validate({
 
             rules: {
                 date: { required: true },
@@ -206,15 +199,15 @@ $(document).ready(function () {
             errorElement: "small",
             errorClass: "text-danger",
 
-            submitHandler: function (form) {
+            submitHandler: function (formEl) {
 
-                const $submitBtn = $(form).find("button[type='submit']");
+                const $submitBtn = $(formEl).find("button[type='submit']");
 
                 $.ajax({
 
-                    url: $(form).attr("action"),
+                    url: $(formEl).attr("action"),
                     type: "POST",
-                    data: $(form).serialize(),
+                    data: $(formEl).serialize(),
 
                     beforeSend: function () {
                         $submitBtn.prop("disabled", true);
@@ -225,6 +218,7 @@ $(document).ready(function () {
                         toastr.success(response.message || "Receipt saved");
 
                         window.location.href = indexReceiptUrl;
+
                     },
 
                     error: function () {
@@ -232,12 +226,12 @@ $(document).ready(function () {
                         $submitBtn.prop("disabled", false);
 
                         toastr.error("Something went wrong");
+
                     }
 
                 });
 
                 return false;
-
             }
 
         });
@@ -246,128 +240,71 @@ $(document).ready(function () {
 
     /*
     =========================
-    LOAD CUSTOMER INVOICES
+    EDIT MODE
     =========================
     */
 
-    $("#firm_id").on("change", function () {
-
-        let firm_id = $(this).val();
-        let invoiceDropdown = $("#invoice_id");
-
-        invoiceDropdown.html('<option value="">Loading...</option>');
-
-        if (firm_id !== "") {
-
-            $.ajax({
-
-                url: "/get-pending-invoices/" + firm_id,
-                type: "GET",
-
-                success: function (data) {
-
-                    invoiceDropdown.html('<option value="">Select Invoice</option>');
-
-                    if (data.length > 0) {
-
-                        $.each(data, function (index, invoice) {
-
-                            let paid = invoice.paid_amount ?? 0;
-                            let payable = invoice.payable_amount ?? 0;
-
-                            let remaining = payable - paid;
-
-                            invoiceDropdown.append(`
-                                <option value="${invoice.id}" 
-                                    data-amount="${invoice.amount}"
-                                    data-payable="${payable}"
-                                    data-paid="${paid}"
-                                    data-sales-person="${invoice.salesperson ? invoice.salesperson.name : ''}">
-                                    ${invoice.invoice_no} (Remaining: ${remaining})
-                                </option>
-                            `);
-
-                        });
-
-                    } else {
-
-                        invoiceDropdown.html('<option value="">No Pending Invoice</option>');
-
-                    }
-
-                }
-
-            });
-
-        } else {
-
-            invoiceDropdown.html('<option value="">Select Invoice</option>');
-
-        }
-
-    });
+    if ($("#editReceiptForm").length) {
+        $("#invoice_id").prop("disabled", true);
+    }
 
     /*
     =========================
-    INVOICE DETAIL
+    LOAD INVOICE DATA
     =========================
     */
 
-    $("#invoice_id").on("change", function () {
+    function loadInvoiceData() {
 
-        let selected = $(this).find(":selected");
+        let selected = $("#invoice_id").find(":selected");
 
+        let amount = parseFloat(selected.data("amount")) || 0;
+        let payable = parseFloat(selected.data("payable")) || 0;
         let salesPerson = selected.data("sales-person") || "";
-        let amount = selected.data("amount") || 0;
-        let payable = selected.data("payable") || 0;
-        let paid = selected.data("paid") || 0;
 
-        let remaining = payable - paid;
-
-        $("#amount").val(amount);
-        $("#remaining_amount").val(remaining.toFixed(2));
+        $("#amount").val(amount.toFixed(2));
         $("#sales_person").val(salesPerson);
 
-    });
-
+        calculateRemaining();
+    }
 
     /*
     =========================
-    CHANGE RECEIPT STATUS
+    CALCULATE REMAINING
     =========================
     */
 
-    $(document).on("change", ".change-receipt-status", function () {
+    function calculateRemaining() {
 
-        let id = $(this).data("id");
-        let status = $(this).val();
+        let payable = parseFloat($("#invoice_id option:selected").data("payable")) || 0;
 
-        let url = updateReceiptStatusUrl.replace(":id", id);
+        let given = parseFloat($("#given_amount").val()) || 0;
 
-        $.ajax({
+        let remaining = payable - given;
 
-            url: url,
-            type: "POST",
-            data: {
-                status: status
-            },
+        if (remaining < 0) remaining = 0;
 
-            success: function (response) {
+        $("#remaining_amount").val(remaining.toFixed(2));
+    }
 
-                toastr.success(response.message || "Status updated");
+    /*
+    =========================
+    EVENTS
+    =========================
+    */
 
-                $("#receiptTable").DataTable().ajax.reload(null, false);
+    $("#invoice_id").on("change", loadInvoiceData);
 
-            },
+    $("#given_amount").on("input", calculateRemaining);
 
-            error: function () {
+    /*
+    =========================
+    PAGE LOAD
+    =========================
+    */
 
-                toastr.error("Status update failed");
-
-            }
-
-        });
-
-    });
+    if ($("#invoice_id").val()) {
+        loadInvoiceData();
+    }
 
 });

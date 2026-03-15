@@ -26,89 +26,173 @@
                         <hr>
                     </div>
 
-                    <form id="receiptForm" data-mode="edit" data-current-invoice-id="{{ $receipt->invoice_id }}" data-current-given="{{ $receipt->given_amount }}" action="{{ route('admin.receipt.update', $receipt->id) }}" method="POST">
+                    <form id="editReceiptForm"
+                        data-mode="edit"
+                        data-current-invoice-id="{{ $receipt->invoice_id }}"
+                        data-current-given="{{ $receipt->given_amount }}"
+                        action="{{ route('admin.receipt.update',$receipt->id) }}"
+                        method="POST">
+
                         @csrf
 
+                        <input type="hidden" name="invoice_id" value="{{ $receipt->invoice_id }}">
+
                         <div class="row">
+
+                            {{-- Date --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" name="date" class="form-control" value="{{ old('date', $receipt->date ? \Illuminate\Support\Carbon::parse($receipt->date)->format('Y-m-d') : '') }}">
+                                <label>Date</label>
+                                <input type="date"
+                                    name="date"
+                                    class="form-control"
+                                    value="{{ \Carbon\Carbon::parse($receipt->date)->format('Y-m-d') }}">
                             </div>
 
+                            {{-- Receipt No --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Receipt No. <span class="text-danger">*</span></label>
-                                <input type="text" name="receipt_no" id="receipt_no" class="form-control" value="{{ old('receipt_no', $receipt->receipt_no) }}" readonly>
+                                <label>Receipt No</label>
+                                <input type="text"
+                                    name="receipt_no"
+                                    class="form-control"
+                                    value="{{ $receipt->receipt_no }}"
+                                    readonly>
                             </div>
 
+                            {{-- Firm --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Firm Name <span class="text-danger">*</span></label>
+                                <label>Firm Name</label>
+
                                 <select name="firm_id" id="firm_id" class="form-select">
+
                                     <option value="">Select Firm</option>
-                                    @foreach ($customers as $customer)
-                                        <option value="{{ $customer->id }}" data-discount="{{ $customer->discount }}" {{ (string) old('firm_id', $receipt->firm_id) === (string) $customer->id ? 'selected' : '' }}>
+
+                                    @foreach($customers as $customer)
+
+                                        <option value="{{ $customer->id }}"
+                                            {{ $receipt->firm_id == $customer->id ? 'selected':'' }}>
                                             {{ $customer->firm_name }}
                                         </option>
+
                                     @endforeach
+
                                 </select>
+
                             </div>
 
+                            {{-- Invoice --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Invoice <span class="text-danger">*</span></label>
-                                <select name="invoice_id" class="form-select" id="invoice_id">
-                                    <option value="">Select Invoice</option>
-                                    @foreach ($invoices as $invoice)
-                                        <option value="{{ $invoice->id }}" data-amount="{{ $invoice->amount }}" data-firm="{{ $invoice->firm_id }}" data-sales-person="{{ optional($invoice->salesperson)->name }}" data-paid="{{ number_format((float) ($invoice->paid_amount ?? 0), 2, '.', '') }}" {{ (string) old('invoice_id', $receipt->invoice_id) === (string) $invoice->id ? 'selected' : '' }}>
-                                            {{ $invoice->invoice_no }} ({{ strtoupper($invoice->status) }})
+
+                                <label>Invoice</label>
+
+                                <select id="invoice_id" class="form-select">
+
+                                    @foreach($invoices as $invoice)
+
+                                        <option value="{{ $invoice->id }}"
+                                            data-amount="{{ $invoice->amount }}"
+                                            data-payable="{{ $invoice->payable_amount }}"
+                                            data-paid="{{ $invoice->paid_amount ?? 0 }}"
+                                            data-sales-person="{{ optional($invoice->salesperson)->name }}"
+                                            {{ $receipt->invoice_id == $invoice->id ? 'selected':'' }}>
+
+                                            {{ $invoice->invoice_no }}
+
                                         </option>
+
                                     @endforeach
+
                                 </select>
+
                             </div>
 
+                            {{-- Invoice Amount --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Invoice Amount</label>
-                                <input type="number" step="0.01" min="0" name="amount" id="amount" class="form-control" value="{{ old('amount', $receipt->amount) }}" readonly>
+
+                                <label>Invoice Amount</label>
+
+                                <input type="number"
+                                    id="amount"
+                                    class="form-control"
+                                    readonly>
+
                             </div>
 
+                            {{-- Remaining --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Discount (%)</label>
-                                <input type="number" step="0.01" min="0" max="100" name="discount" id="discount" class="form-control" value="{{ old('discount', $receipt->discount) }}" readonly>
+
+                                <label>Remaining Amount</label>
+
+                                <input type="number"
+                                    id="remaining_amount"
+                                    class="form-control"
+                                    readonly>
+
                             </div>
 
+                            {{-- Given Amount --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Net Payable</label>
-                                <input type="number" step="0.01" min="0" name="final_amount" id="final_amount" class="form-control" value="{{ old('final_amount', $receipt->final_amount) }}" readonly>
+
+                                <label>Given Amount</label>
+
+                                <input type="number"
+                                    step="0.01"
+                                    name="given_amount"
+                                    id="given_amount"
+                                    class="form-control"
+                                    value="{{ $receipt->given_amount }}">
+
                             </div>
 
+                            {{-- Sales Person --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Remaining Amount</label>
-                                <input type="number" step="0.01" min="0" id="remaining_amount" class="form-control" value="" readonly>
+
+                                <label>Sales Person</label>
+
+                                <input type="text"
+                                    id="sales_person"
+                                    class="form-control"
+                                    readonly>
+
                             </div>
 
+                            {{-- Mode --}}
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Given Amount <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" name="given_amount" id="given_amount" class="form-control" value="{{ old('given_amount', $receipt->given_amount) }}">
-                            </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Sales Person</label>
-                                <input type="text" name="sales_person" id="sales_person" class="form-control" placeholder="Auto from invoice" value="{{ old('sales_person', $receipt->sales_person) }}" readonly>
-                            </div>
+                                <label>Mode</label>
 
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Mode</label>
                                 <select name="mode" class="form-select">
-                                    <option value="">Select Mode</option>
-                                    <option value="cash" {{ old('mode', $receipt->mode) === 'cash' ? 'selected' : '' }}>Cash</option>
-                                    <option value="upi" {{ old('mode', $receipt->mode) === 'upi' ? 'selected' : '' }}>UPI</option>
-                                    <option value="bank" {{ old('mode', $receipt->mode) === 'bank' ? 'selected' : '' }}>Bank</option>
-                                    <option value="card" {{ old('mode', $receipt->mode) === 'card' ? 'selected' : '' }}>Card</option>
+
+                                    <option value="cash" {{ $receipt->mode == 'cash' ? 'selected':'' }}>Cash</option>
+                                    <option value="upi" {{ $receipt->mode == 'upi' ? 'selected':'' }}>UPI</option>
+                                    <option value="bank" {{ $receipt->mode == 'bank' ? 'selected':'' }}>Bank</option>
+                                    <option value="card" {{ $receipt->mode == 'card' ? 'selected':'' }}>Card</option>
+
                                 </select>
+
                             </div>
+
+                            {{-- Remark --}}
+                            <div class="col-md-12 mb-3">
+
+                                <label>Remark</label>
+
+                                <input type="text"
+                                    name="remark"
+                                    class="form-control"
+                                    value="{{ $receipt->remark }}">
+
+                            </div>
+
                         </div>
 
                         <div class="text-end">
-                            <button type="submit" class="btn btn-success">Update Receipt</button>
+
+                            <button class="btn btn-success">
+                                Update Receipt
+                            </button>
+
                         </div>
+
                     </form>
                 </div>
             </div>
