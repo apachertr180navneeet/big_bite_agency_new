@@ -270,57 +270,70 @@ class AdminAuthController extends Controller
         }
     }
 
+    /**
+     * Admin Dashboard Data
+     * Fetch summary statistics for dashboard cards
+     */
     public function adminDashboard()
     {
-        // Salesperson
-        $salespersonCount = Salesperson::count();
-        $activeSalesperson = Salesperson::where('status', 'active')->count();
+        /* ------------------------------
+        | Invoice Statistics
+        ------------------------------*/
 
-        // Customers
-        $customerCount = Customer::count();
-        $activeCustomer = Customer::where('status', 'active')->count();
-
-        // Invoices
+        // Total number of invoices
         $invoiceCount = Invoice::count();
 
-        // Total Bill Amount
+        // Total bill amount from all invoices
         $totalBillAmount = Invoice::sum('payable_amount');
 
-        // Receipts
+
+        /* ------------------------------
+        | Receipt Statistics
+        ------------------------------*/
+
+        // Total receipts
         $receiptCount = Receipt::count();
 
-        // Approved Receipt
+        // Approved receipts count
         $approvedReceiptCount = Receipt::where('status', 'accpet')->count();
 
-        // Unapproved Receipt
+        // Rejected / Unapproved receipts count
         $unapprovedReceiptCount = Receipt::where('status', 'rejected')->count();
 
-        // Total Received Amount
+        // Total received amount
         $totalReceivedAmount = Receipt::sum('given_amount');
 
-        // Total Outstanding Amount
+
+        /* ------------------------------
+        | Outstanding Calculation
+        ------------------------------*/
+
+        // Outstanding amount = Total Bill - Total Received
         $totalOutstandingAmount = $totalBillAmount - $totalReceivedAmount;
 
-        $monthlyCollection = Receipt::select(
-            DB::raw('MONTH(created_at) as month'),
-            DB::raw('SUM(given_amount) as total')
-        )
-        ->whereYear('created_at', Carbon::now()->year)
-        ->groupBy('month')
-        ->pluck('total', 'month')
-        ->toArray();
 
-        $monthlyData = [];
+        /* ------------------------------
+        | Oldest Pending Invoices
+        ------------------------------*/
 
-        for ($i = 1; $i <= 12; $i++) {
-            $monthlyData[] = $monthlyCollection[$i] ?? 0;
-        }
+        $pendingInvoices = Invoice::select(
+            'invoices.*',
+            'customers.firm_name as firm_name',
+            'salespersons.name as salesman_name',
+            DB::raw('DATEDIFF(NOW(), invoices.created_at) as pending_days')
+            )
+            ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
+            ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
+            ->where('invoices.status', 'pending')
+            ->orderBy('invoices.created_at', 'asc') // oldest first
+            ->limit(20)
+            ->get();
 
-        return view("admin.dashboard.index", compact(
-            'salespersonCount',
-            'activeSalesperson',
-            'customerCount',
-            'activeCustomer',
+
+        /* ------------------------------
+        | Return Dashboard View
+        ------------------------------*/
+        return view('admin.dashboard.index', compact(
             'invoiceCount',
             'totalBillAmount',
             'receiptCount',
@@ -328,7 +341,7 @@ class AdminAuthController extends Controller
             'unapprovedReceiptCount',
             'totalReceivedAmount',
             'totalOutstandingAmount',
-            'monthlyData'
+            'pendingInvoices'
         ));
     }
 

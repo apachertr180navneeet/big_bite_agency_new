@@ -74,6 +74,32 @@
                 <div class="row row-bordered g-0">
                     <div class="col-md-12">
                         <h5 class="card-header m-0 me-2 pb-3">Old Pending invoice</h5>
+                        <div class="m-2 pb-3">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice No</th>
+                                        <th>Firm Name</th>
+                                        <th>Salesman</th>
+                                        <th>Invoice Date</th>
+                                        <th>Pending Days</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($pendingInvoices as $invoice)
+                                    <tr>
+                                        <td>{{ $invoice->invoice_no }}</td>
+                                        <td>{{ $invoice->firm_name }}</td>
+                                        <td>{{ $invoice->salesman_name }}</td>
+                                        <td>{{ date('d-m-Y', strtotime($invoice->created_at)) }}</td>
+                                        <td>{{ $invoice->pending_days }} Days</td>
+                                        <td>{{ $invoice->payable_amount }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -90,8 +116,8 @@
                                     <img src="{{ asset('assets/admin/img/icons/unicons/paypal.png') }}"  alt="Credit Card" class="rounded" />
                                 </div>
                             </div>
-                            <span class="d-block mb-1">Salesman</span>
-                            <h3 class="card-title text-nowrap mb-2">{{ $activeSalesperson }}</h3>
+                            <span class="d-block mb-1">Approved Recipt</span>
+                            <h3 class="card-title text-nowrap mb-2">{{ $approvedReceiptCount }}</h3>
                         </div>
                     </div>
                 </div>
@@ -104,8 +130,8 @@
                                     <img src="{{ asset('assets/admin/img/icons/unicons/cc-primary.png') }}"  alt="Credit Card" class="rounded" />
                                 </div>
                             </div>
-                            <span class="fw-medium d-block mb-1">Customer</span>
-                            <h3 class="card-title mb-2">{{ $activeSalesperson }}</h3>
+                            <span class="fw-medium d-block mb-1">Un Approved Recipt</span>
+                            <h3 class="card-title mb-2">{{ $unapprovedReceiptCount }}</h3>
                         </div>
                     </div>
                 </div>
@@ -138,9 +164,5 @@
 @endsection
 
 @section('script')
-<script>
-    var receiptCount = {{ $receiptCount ?? 0 }};
-    var monthlyCollection = @json($monthlyData);
-</script>
-<script src="{{asset('assets/admin/js/dashboards-analytics.js')}}"></script>
+
 @endsection
