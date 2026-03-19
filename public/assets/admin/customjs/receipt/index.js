@@ -39,7 +39,7 @@ $(document).ready(function () {
 
             processing: true,
             serverSide: true,
-            autoWidth: false,
+            autoWidth: true,
             searching: false,
 
             ajax: {
@@ -59,9 +59,7 @@ $(document).ready(function () {
 
             columns: [
 
-                { data: "receipt_no" },
                 { data: "date" },
-                { data: "firm_name", defaultContent: "-" },
                 { data: "invoice_no", defaultContent: "-" },
 
                 {
@@ -75,13 +73,18 @@ $(document).ready(function () {
                 },
 
                 {
-                    data: "final_amount",
-                    render: data => Number(data || 0).toFixed(2)
+                    data: "sales_person",
+                    defaultContent: "-"
                 },
 
                 {
                     data: "mode",
                     render: data => data ? data.toUpperCase() : "-"
+                },
+
+                {
+                    data: "remark",
+                    defaultContent: "-"
                 },
 
                 {
@@ -136,6 +139,49 @@ $(document).ready(function () {
         });
 
     }
+
+    /*
+    =========================
+    RECEIPT FILTERS
+    =========================
+    */
+
+    function reloadReceiptTable(resetPaging = true) {
+
+        if (!receiptTable) {
+            return;
+        }
+
+        receiptTable.ajax.reload(null, resetPaging);
+    }
+
+    $("#applyReceiptFilters").on("click", function () {
+        reloadReceiptTable(true);
+    });
+
+    $("#resetReceiptFilters").on("click", function () {
+
+        $("#filter_receipt_no").val("");
+        $("#filter_date_from").val("");
+        $("#filter_date_to").val("");
+        $("#filter_mode").val("");
+        $("#filter_manager_status").val("");
+        $("#filter_status").val("");
+
+        reloadReceiptTable(true);
+    });
+
+    $("#filter_receipt_no, #filter_date_from, #filter_date_to").on("keypress", function (e) {
+
+        if (e.which === 13) {
+            reloadReceiptTable(true);
+        }
+
+    });
+
+    $("#filter_mode, #filter_manager_status, #filter_status").on("change", function () {
+        reloadReceiptTable(true);
+    });
 
     /*
     =========================
@@ -480,4 +526,8 @@ $(document).ready(function () {
 
 
 });
+
+
+
+
 

@@ -21,65 +21,71 @@
         <div class="col-xl-12 col-lg-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="row g-3 mb-3">
+                    <form id="receiptFilterForm" class="row g-3 mb-3" onsubmit="return false;">
                         <div class="col-md-2">
                             <label for="filter_receipt_no" class="form-label">Receipt Number</label>
-                            <input type="text" id="filter_receipt_no" class="form-control" placeholder="Enter receipt number">
+                            <input
+                                type="text"
+                                id="filter_receipt_no"
+                                name="receipt_no"
+                                class="form-control"
+                                value="{{ request('receipt_no') }}"
+                                placeholder="Enter receipt number">
                         </div>
                         <div class="col-md-2">
                             <label for="filter_date_from" class="form-label">Start Date</label>
-                            <input type="date" id="filter_date_from" class="form-control">
+                            <input
+                                type="date"
+                                id="filter_date_from"
+                                name="date_from"
+                                class="form-control"
+                                value="{{ request('date_from') }}">
                         </div>
                         <div class="col-md-2">
                             <label for="filter_date_to" class="form-label">End Date</label>
-                            <input type="date" id="filter_date_to" class="form-control">
+                            <input
+                                type="date"
+                                id="filter_date_to"
+                                name="date_to"
+                                class="form-control"
+                                value="{{ request('date_to') }}">
                         </div>
                         <div class="col-md-2">
                             <label for="filter_mode" class="form-label">Mode</label>
-                            <select id="filter_mode" class="form-select">
+                            <select id="filter_mode" name="mode" class="form-select">
                                 <option value="">All</option>
-                                <option value="cash">Cash</option>
-                                <option value="upi">UPI</option>
-                                <option value="bank">Bank</option>
-                                <option value="card">Card</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="filter_manager_status" class="form-label">Manager Status</label>
-                            <select id="filter_manager_status" class="form-select">
-                                <option value="">All</option>
-                                <option value="pending">Pending</option>
-                                <option value="accpet">Accept</option>
-                                <option value="rejected">Rejected</option>
+                                <option value="cash" {{ request('mode') === 'cash' ? 'selected' : '' }}>Cash</option>
+                                <option value="upi" {{ request('mode') === 'upi' ? 'selected' : '' }}>UPI</option>
+                                <option value="bank" {{ request('mode') === 'bank' ? 'selected' : '' }}>Bank</option>
+                                <option value="card" {{ request('mode') === 'card' ? 'selected' : '' }}>Card</option>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label for="filter_status" class="form-label">Status</label>
-                            <select id="filter_status" class="form-select">
+                            <select id="filter_status" name="status" class="form-select">
                                 <option value="">All</option>
-                                <option value="pending">Pending</option>
-                                <option value="accpet">Accept</option>
-                                <option value="rejected">Rejected</option>
+                                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="accpet" {{ request('status') === 'accpet' ? 'selected' : '' }}>Accept</option>
+                                <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
                             </select>
                         </div>
                         <div class="col-md-12 d-flex align-items-end gap-2">
                             <button type="button" id="applyReceiptFilters" class="btn btn-primary">Apply</button>
                             <button type="button" id="resetReceiptFilters" class="btn btn-outline-secondary">Reset</button>
                         </div>
-                    </div>
+                    </form>
 
-                    <div class="table-responsive text-nowrap">
+                    <div class="table-responsive">
                         <table class="table table-bordered" id="receiptTable">
                             <thead>
                                 <tr>
-                                    <th>Receipt No</th>
                                     <th>Date</th>
-                                    <th>Firm</th>
-                                    <th>Invoice No</th>
-                                    <th>Amount</th>
-                                    <th>Given</th>
-                                    <th>Final</th>
-                                    <th>Mode</th>
+                                    <th>B./No.</th>
+                                    <th>Bill Amt</th>
+                                    <th>R. Amt</th>
+                                    <th>Sales Person</th>
+                                    <th>Payment Mode</th>
+                                    <th>Remark</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
@@ -105,3 +111,6 @@
 </script>
 <script src="{{ asset('assets/admin/customjs/receipt/index.js') }}"></script>
 @endsection
+
+
+

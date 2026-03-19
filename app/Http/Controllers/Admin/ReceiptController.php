@@ -18,29 +18,38 @@ class ReceiptController extends Controller
 
     public function getall(Request $request)
     {
+        $validated = $request->validate([
+            'receipt_no' => 'nullable|string|max:100',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'mode' => 'nullable|in:cash,upi,bank,card',
+            'manager_status' => 'nullable|in:pending,accpet,rejected',
+            'status' => 'nullable|in:pending,accpet,rejected',
+        ]);
+
         $query = Receipt::query()->with([
             'firm:id,firm_name',
             'invoice:id,invoice_no',
         ]);
 
-        if ($request->filled('receipt_no')) {
-            $query->where('receipt_no', 'like', '%' . $request->receipt_no . '%');
+        if (!empty($validated['receipt_no'])) {
+            $query->where('receipt_no', 'like', '%' . $validated['receipt_no'] . '%');
         }
 
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->whereBetween('date', [$request->date_from, $request->date_to]);
+        if (!empty($validated['date_from'])) {
+            $query->whereDate('date', '>=', $validated['date_from']);
         }
 
-        if ($request->filled('mode')) {
-            $query->where('mode', $request->mode);
+        if (!empty($validated['date_to'])) {
+            $query->whereDate('date', '<=', $validated['date_to']);
         }
 
-        if ($request->filled('manager_status')) {
-            $query->where('manager_status', $request->manager_status);
+        if (!empty($validated['mode'])) {
+            $query->where('mode', $validated['mode']);
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (!empty($validated['status'])) {
+            $query->where('status', $validated['status']);
         }
 
         $totalRecords = Receipt::count();
