@@ -1,6 +1,36 @@
 @extends('admin.layouts.app')
 
 @section('style')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container .select2-selection--single {
+        height: calc(2.25rem + 2px);
+        border: 1px solid #d9dee3;
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        color: #566a7f;
+        line-height: normal;
+        padding-left: 0.75rem;
+        padding-right: 2rem;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 0.5rem;
+    }
+
+    .select2-dropdown {
+        border-color: #d9dee3;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -62,7 +92,7 @@
                             <div class="col-md-4 mb-3">
                                 <label>Firm Name</label>
 
-                                <select name="firm_id" id="firm_id" class="form-select">
+                                <select name="firm_id" id="firm_id" class="form-select searchable-select" data-placeholder="Search Firm Name">
 
                                     <option value="">Select Firm</option>
 
@@ -84,7 +114,7 @@
 
                                 <label>Invoice</label>
 
-                                <select id="invoice_id" class="form-select">
+                                <select id="invoice_id" class="form-select searchable-select" data-placeholder="Search Invoice">
 
                                     @foreach($invoices as $invoice)
 
@@ -202,10 +232,23 @@
 @endsection
 
 @section('script')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     const indexReceiptUrl = "{{ route('admin.receipt.index') }}";
     const createReceiptUrl = "{{ route('admin.receipt.create') }}";
+
+    $('.searchable-select').each(function () {
+        const $select = $(this);
+        const placeholder = $select.data('placeholder') || 'Search';
+
+        $select.select2({
+            width: '100%',
+            placeholder: placeholder,
+            allowClear: true
+        }).on('select2:open', function () {
+            $('.select2-search__field').attr('placeholder', placeholder);
+        });
+    });
 </script>
 <script src="{{ asset('assets/admin/customjs/receipt/index.js') }}"></script>
 @endsection
-

@@ -57,14 +57,6 @@ $(document).ready(function () {
                 },
 
                 {
-                    data: "discount_amount",
-                    searchable: false,
-                    render: function (data) {
-                        return data ? Number(data).toFixed(2) : "0.00";
-                    }
-                },
-
-                {
                     data: "payable_amount",
                     searchable: false,
                     render: function (data) {

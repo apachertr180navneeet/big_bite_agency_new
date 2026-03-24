@@ -67,7 +67,6 @@
                                     <th>Salesperson</th>
                                     <th>Amount</th>
                                     <th>Discount %</th>
-                                    <th>Discount Amount</th>
                                     <th>Payable Amount</th>
                                     <th>Status</th>
                                     <th>Action</th>

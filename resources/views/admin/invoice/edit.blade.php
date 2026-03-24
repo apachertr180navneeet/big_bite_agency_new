@@ -1,6 +1,36 @@
 @extends('admin.layouts.app')
 
 @section('style')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container .select2-selection--single {
+        height: calc(2.25rem + 2px);
+        border: 1px solid #d9dee3;
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        color: #566a7f;
+        line-height: normal;
+        padding-left: 0.75rem;
+        padding-right: 2rem;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 0.5rem;
+    }
+
+    .select2-dropdown {
+        border-color: #d9dee3;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -64,7 +94,7 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Firm Name <span class="text-danger">*</span></label>
-                                <select name="firm_id" class="form-select">
+                                <select name="firm_id" class="form-select searchable-select" data-placeholder="Search Firm Name">
                                     <option value="">Select Firm</option>
                                     @foreach ($customers as $customer)
                                         <option value="{{ $customer->id }}" {{ (string) old('firm_id', $invoice->firm_id) === (string) $customer->id ? 'selected' : '' }}>
@@ -76,7 +106,7 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Salesperson Name <span class="text-danger">*</span></label>
-                                <select name="salesperson_id" class="form-select">
+                                <select name="salesperson_id" class="form-select searchable-select" data-placeholder="Search Salesperson Name">
                                     <option value="">Select Salesperson</option>
                                     @foreach ($salespersons as $salesperson)
                                         <option value="{{ $salesperson->id }}" {{ (string) old('salesperson_id', $invoice->salesperson_id) === (string) $salesperson->id ? 'selected' : '' }}>
@@ -154,9 +184,23 @@
 @endsection
 
 @section('script')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     const indexInvoiceUrl = "{{ route('admin.invoice.index') }}";
     const createInvoiceUrl = "{{ route('admin.invoice.create') }}";
+
+    $('.searchable-select').each(function () {
+        const $select = $(this);
+        const placeholder = $select.data('placeholder') || 'Search';
+
+        $select.select2({
+            width: '100%',
+            placeholder: placeholder,
+            allowClear: true
+        }).on('select2:open', function () {
+            $('.select2-search__field').attr('placeholder', placeholder);
+        });
+    });
 </script>
 <script src="{{ asset('assets/admin/customjs/invoice/index.js') }}"></script>
 @endsection

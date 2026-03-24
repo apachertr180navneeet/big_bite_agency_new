@@ -1,6 +1,36 @@
 @extends('admin.layouts.app')
 
 @section('style')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container .select2-selection--single {
+        height: calc(2.25rem + 2px);
+        border: 1px solid #d9dee3;
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        color: #566a7f;
+        line-height: normal;
+        padding-left: 0.75rem;
+        padding-right: 2rem;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 0.5rem;
+    }
+
+    .select2-dropdown {
+        border-color: #d9dee3;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -37,12 +67,12 @@
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Receipt No. <span class="text-danger">*</span></label>
-                                <input type="text" name="receipt_no" id="receipt_no" class="form-control" value="{{ old('receipt_no', $generatedReceiptNo) }}">
+                                <input type="text" name="receipt_no" id="receipt_no" class="form-control" value="{{ old('receipt_no', $generatedReceiptNo) }}" readonly>
                             </div>
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Firm Name <span class="text-danger">*</span></label>
-                                <select name="firm_id" id="firm_id" class="form-select">
+                                <select name="firm_id" id="firm_id" class="form-select searchable-select" data-placeholder="Search Firm Name">
                                     <option value="">Select Firm</option>
                                     @foreach ($customers as $customer)
                                         <option value="{{ $customer->id }}" data-discount="{{ $customer->discount }}" {{ old('firm_id') == $customer->id ? 'selected' : '' }}>
@@ -54,7 +84,7 @@
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Invoice <span class="text-danger">*</span></label>
-                                <select name="invoice_id" class="form-select" id="invoice_id">
+                                <select name="invoice_id" class="form-select searchable-select" id="invoice_id" data-placeholder="Search Invoice">
                                     <option value="">Select Invoice</option>
                                 </select>
                             </div>
@@ -108,9 +138,22 @@
 @endsection
 
 @section('script')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     const indexReceiptUrl = "{{ route('admin.receipt.index') }}";
+
+    $('.searchable-select').each(function () {
+        const $select = $(this);
+        const placeholder = $select.data('placeholder') || 'Search';
+
+        $select.select2({
+            width: '100%',
+            placeholder: placeholder,
+            allowClear: true
+        }).on('select2:open', function () {
+            $('.select2-search__field').attr('placeholder', placeholder);
+        });
+    });
 </script>
 <script src="{{ asset('assets/admin/customjs/receipt/index.js') }}"></script>
 @endsection
-

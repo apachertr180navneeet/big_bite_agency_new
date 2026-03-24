@@ -25,7 +25,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="form-label">Name*</label>
-                                    <input type="text" id="" name="name" class="form-control" placeholder="Enter First Name" value="{{old('name',$user->name)}}" required>
+                                    <input type="text" id="" name="name" class="form-control" placeholder="Enter First Name" value="{{old('name',$user->name)}}" readonly>
                                     @error('name')
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror
@@ -34,7 +34,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="form-label">Mobile*</label>
-                                    <input type="tel" name="mobile" class="form-control" placeholder="Enter Mobile" value="{{ old('mobile',$user->mobile) }}" required>
+                                    <input type="tel" name="mobile" class="form-control" placeholder="Enter Mobile" value="{{ old('mobile',$user->mobile) }}" readonly>
                                     @error('mobile')
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror
@@ -42,11 +42,11 @@
                             </div>
                         </div>
                        
-                        <div class="pt-4">
+                        {{--  <div class="pt-4">
                             <div class="col-md-12 submit-btn">
                                 <button type="submit" class="btn btn-primary">Save</button> 
                             </div>
-                        </div>
+                        </div>  --}}
                     </form>
                 </div>
             </div>

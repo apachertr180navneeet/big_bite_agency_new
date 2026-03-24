@@ -41,7 +41,7 @@
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Receipt No. <span class="text-danger">*</span></label>
-                                <input type="text" name="receipt_no" id="receipt_no" class="form-control" value="{{ old('receipt_no', $generatedReceiptNo) }}">
+                                <input type="text" name="receipt_no" id="receipt_no" class="form-control" value="{{ old('receipt_no', $generatedReceiptNo) }}" readonly>
                             </div>
 
                             <div class="col-md-4 mb-3">

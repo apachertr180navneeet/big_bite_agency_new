@@ -78,6 +78,11 @@ $(document).ready(function () {
                 },
 
                 {
+                    data: "firm_name",
+                    defaultContent: "-"
+                },
+
+                {
                     data: "mode",
                     render: data => data ? data.toUpperCase() : "-"
                 },

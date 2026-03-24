@@ -84,6 +84,7 @@
                                     <th>Bill Amt</th>
                                     <th>R. Amt</th>
                                     <th>Sales Person</th>
+                                    <th>Firm Name</th>
                                     <th>Payment Mode</th>
                                     <th>Remark</th>
                                     <th>Status</th>
