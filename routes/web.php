@@ -72,7 +72,9 @@ Route::name('admin.')->prefix('admin')->group(function () {
         }
 
         Route::get('sales-person-report', [ReportController::class, 'salespersionreport'])->name('sales.person.report');
-         Route::get('cash-report', [ReportController::class, 'caashReport'])->name('cash.report');
+        Route::get('cash-report', [ReportController::class, 'caashReport'])->name('cash.report');
+        Route::get('firm-ledger-report', [ReportController::class, 'firmLedgerReport'])->name('firm.ledger.report');
+        Route::get('firm-ledger-details-report', [ReportController::class, 'firmLedgerDetailsReport'])->name('firm.ledger.details.report');
     });
 
 });
@@ -121,4 +123,3 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/get-pending-invoices/{firm_id}', [ReceiptController::class, 'getPendingInvoices'])->name('get.pending.invoices');
 
 Route::get('/get-invoice-detail/{id}', [ReceiptController::class, 'getInvoiceDetail'])->name('get.invoice.detail');
-

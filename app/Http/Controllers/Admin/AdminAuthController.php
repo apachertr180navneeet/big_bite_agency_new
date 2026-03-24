@@ -275,74 +275,125 @@ class AdminAuthController extends Controller
      * Admin Dashboard Data
      * Fetch summary statistics for dashboard cards
      */
+    // public function adminDashboard()
+    // {
+    //     $acceptedReceiptTotals = Receipt::select(
+    //             'invoice_id',
+    //             DB::raw('SUM(given_amount) as total_paid')
+    //         )
+    //         ->where('status', 'accpet')
+    //         ->groupBy('invoice_id');
+
+    //     /* ------------------------------
+    //     | Invoice Statistics
+    //     ------------------------------*/
+
+    //    // Total number of pending invoices
+    //    $pendingInvoiceCount = Invoice::where('status', 'pending')->count();
+
+    //    // Remaining due amount of pending invoices after accepted receipts
+    //    $totalPendingBillAmount = Invoice::query()
+    //         ->leftJoinSub($acceptedReceiptTotals, 'accepted_receipts', function ($join) {
+    //             $join->on('accepted_receipts.invoice_id', '=', 'invoices.id');
+    //         })
+    //         ->where('invoices.status', 'pending')
+    //         ->sum(DB::raw('GREATEST(invoices.payable_amount - COALESCE(accepted_receipts.total_paid, 0), 0)'));
+
+
+    //    // Rejected / Unapproved receipts count
+    //     $unapprovedReceiptCount = Receipt::where('status', 'pending')->count();
+
+    //     // Total received amount
+    //     $unapprovedReceivedAmount = Receipt::where('status', 'pending')->sum('given_amount');
+
+
+    //     /* ------------------------------
+    //     | Oldest Pending Invoices
+    //     ------------------------------*/
+
+    //     $pendingInvoices = Invoice::select(
+    //         'invoices.*',
+    //         'customers.firm_name as firm_name',
+    //         'salespersons.name as salesman_name',
+    //         DB::raw('DATEDIFF(NOW(), invoices.date) as pending_days')
+    //         )
+    //         ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
+    //         ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
+    //         ->where('invoices.status', 'pending')
+    //         ->orderBy('invoices.date', 'asc') // oldest first
+    //         ->limit(20)
+    //         ->get();
+
+
+    //     /* ------------------------------
+    //     | Return Dashboard View
+    //     ------------------------------*/
+    //     return view('admin.dashboard.index', compact(
+    //         'unapprovedReceiptCount',
+    //         'pendingInvoices',
+    //         'pendingInvoiceCount',
+    //         'totalPendingBillAmount',
+    //         'unapprovedReceivedAmount'
+    //     ));
+    // }
+
+
     public function adminDashboard()
     {
+        $acceptedReceiptTotals = Receipt::select(
+                'invoice_id',
+                DB::raw('SUM(given_amount) as total_paid')
+            )
+            ->where('status', 'accpet')
+            ->groupBy('invoice_id');
+
         /* ------------------------------
         | Invoice Statistics
         ------------------------------*/
 
-        // Total number of invoices
-        $invoiceCount = Invoice::count();
+        // Total number of pending invoices
+        $pendingInvoiceCount = Invoice::where('status', 'pending')->count();
 
-        // Total bill amount from all invoices
-        $totalBillAmount = Invoice::sum('payable_amount');
+        // Total remaining pending amount after accepted receipts
+        $totalPendingBillAmount = Invoice::query()
+            ->leftJoinSub($acceptedReceiptTotals, 'accepted_receipts', function ($join) {
+                $join->on('accepted_receipts.invoice_id', '=', 'invoices.id');
+            })
+            ->where('invoices.status', 'pending')
+            ->sum(DB::raw('GREATEST(invoices.payable_amount - COALESCE(accepted_receipts.total_paid, 0), 0)'));
 
+        // Pending receipts count
+        $unapprovedReceiptCount = Receipt::where('status', 'pending')->count();
 
-        /* ------------------------------
-        | Receipt Statistics
-        ------------------------------*/
-
-        // Total receipts
-        $receiptCount = Receipt::count();
-
-        // Approved receipts count
-        $approvedReceiptCount = Receipt::where('status', 'accpet')->count();
-
-        // Rejected / Unapproved receipts count
-        $unapprovedReceiptCount = Receipt::where('status', 'rejected')->count();
-
-        // Total received amount
-        $totalReceivedAmount = Receipt::sum('given_amount');
-
-
-        /* ------------------------------
-        | Outstanding Calculation
-        ------------------------------*/
-
-        // Outstanding amount = Total Bill - Total Received
-        $totalOutstandingAmount = $totalBillAmount - $totalReceivedAmount;
-
+        // Pending receipts total amount
+        $unapprovedReceivedAmount = Receipt::where('status', 'pending')->sum('given_amount');
 
         /* ------------------------------
         | Oldest Pending Invoices
         ------------------------------*/
 
         $pendingInvoices = Invoice::select(
-            'invoices.*',
-            'customers.firm_name as firm_name',
-            'salespersons.name as salesman_name',
-            DB::raw('DATEDIFF(NOW(), invoices.date) as pending_days')
+                'invoices.*',
+                'customers.firm_name as firm_name',
+                'salespersons.name as salesman_name',
+                DB::raw('DATEDIFF(NOW(), invoices.date) as pending_days')
             )
             ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
             ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
             ->where('invoices.status', 'pending')
-            ->orderBy('invoices.date', 'asc') // oldest first
+            ->orderBy('invoices.date', 'asc')
             ->limit(20)
             ->get();
-
 
         /* ------------------------------
         | Return Dashboard View
         ------------------------------*/
         return view('admin.dashboard.index', compact(
-            'invoiceCount',
-            'totalBillAmount',
-            'receiptCount',
-            'approvedReceiptCount',
             'unapprovedReceiptCount',
-            'totalReceivedAmount',
-            'totalOutstandingAmount',
-            'pendingInvoices'
+            'pendingInvoices',
+            'pendingInvoiceCount',
+            'totalPendingBillAmount',
+            'unapprovedReceivedAmount'
         ));
     }
 

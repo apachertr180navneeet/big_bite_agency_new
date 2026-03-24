@@ -16,6 +16,142 @@ use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    public function firmLedgerReport(Request $request)
+    {
+        $firmId = $request->firm_id;
+
+        $firms = Customer::where('status', 'active')
+            ->orderBy('firm_name')
+            ->get(['id', 'firm_name']);
+
+        $invoiceTotals = Invoice::select(
+                'firm_id',
+                DB::raw('SUM(COALESCE(payable_amount, amount)) as total_debit')
+            )
+            ->groupBy('firm_id');
+
+        $receiptTotals = Receipt::select(
+                'firm_id',
+                DB::raw('SUM(given_amount) as total_credit')
+            )
+            ->where('status', 'accpet')
+            ->groupBy('firm_id');
+
+        $reports = Customer::query()
+            ->select(
+                'customers.id',
+                'customers.firm_name',
+                DB::raw('COALESCE(invoice_totals.total_debit, 0) as total_debit'),
+                DB::raw('COALESCE(receipt_totals.total_credit, 0) as total_credit'),
+                DB::raw('COALESCE(invoice_totals.total_debit, 0) - COALESCE(receipt_totals.total_credit, 0) as balance')
+            )
+            ->leftJoinSub($invoiceTotals, 'invoice_totals', function ($join) {
+                $join->on('invoice_totals.firm_id', '=', 'customers.id');
+            })
+            ->leftJoinSub($receiptTotals, 'receipt_totals', function ($join) {
+                $join->on('receipt_totals.firm_id', '=', 'customers.id');
+            })
+            ->when($firmId, function ($query) use ($firmId) {
+                $query->where('customers.id', $firmId);
+            })
+            ->orderBy('customers.firm_name')
+            ->get();
+
+        $totalDebit = $reports->sum('total_debit');
+        $totalCredit = $reports->sum('total_credit');
+        $totalBalance = $reports->sum('balance');
+
+        return view('admin.report.firm-ledger', compact(
+            'reports',
+            'firms',
+            'firmId',
+            'totalDebit',
+            'totalCredit',
+            'totalBalance'
+        ));
+    }
+
+    public function firmLedgerDetailsReport(Request $request)
+    {
+        $firmId = $request->firm_id;
+
+        $firms = Customer::where('status', 'active')
+            ->orderBy('firm_name')
+            ->get(['id', 'firm_name']);
+
+        $selectedFirm = null;
+        $ledgerEntries = collect();
+        $totalPendingAmount = 0;
+        $totalBillAmount = 0;
+        $totalReceiptAmount = 0;
+        $totalDiscountAmount = 0;
+
+        if ($firmId) {
+            $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
+
+            $invoiceEntries = Invoice::query()
+                ->select(
+                    'id',
+                    'date',
+                    'invoice_no as reference_no',
+                    DB::raw("'invoice' as entry_type"),
+                    DB::raw('COALESCE(payable_amount, amount) as debit'),
+                    DB::raw('0 as credit'),
+                    DB::raw('COALESCE(discount_amount, 0) as discount'),
+                    DB::raw('NULL as remark')
+                )
+                ->where('firm_id', $firmId)
+                ->get();
+
+            $receiptEntries = Receipt::query()
+                ->select(
+                    'id',
+                    'date',
+                    'receipt_no as reference_no',
+                    DB::raw("'receipt' as entry_type"),
+                    DB::raw('0 as debit'),
+                    'given_amount as credit',
+                    DB::raw('COALESCE(discount, 0) as discount'),
+                    'remark'
+                )
+                ->where('firm_id', $firmId)
+                ->where('status', 'accpet')
+                ->get();
+
+            $ledgerEntries = $invoiceEntries
+                ->concat($receiptEntries)
+                ->sortBy([
+                    ['date', 'desc'],
+                    ['id', 'desc'],
+                ])
+                ->values();
+
+            $runningBalance = 0;
+            $ledgerEntries = $ledgerEntries->reverse()->values()->map(function ($entry) use (&$runningBalance) {
+                $runningBalance += (float) $entry->debit - (float) $entry->credit;
+                $entry->running_balance = $runningBalance;
+
+                return $entry;
+            })->reverse()->values();
+
+            $totalBillAmount = $invoiceEntries->sum('debit');
+            $totalReceiptAmount = $receiptEntries->sum('credit');
+            $totalDiscountAmount = $invoiceEntries->sum('discount') + $receiptEntries->sum('discount');
+            $totalPendingAmount = $totalBillAmount - $totalReceiptAmount;
+        }
+
+        return view('admin.report.firm-ledger-details', compact(
+            'firms',
+            'firmId',
+            'selectedFirm',
+            'ledgerEntries',
+            'totalPendingAmount',
+            'totalBillAmount',
+            'totalReceiptAmount',
+            'totalDiscountAmount'
+        ));
+    }
+
     public function salespersionreport(Request $request)
     {
         $salesmanId = $request->salesman_id;

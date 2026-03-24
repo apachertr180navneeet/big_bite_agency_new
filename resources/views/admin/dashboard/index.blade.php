@@ -367,11 +367,11 @@
                             <div class="hero-metrics">
                                 <div class="hero-metric">
                                     <span class="hero-label">Total bill count</span>
-                                    <div class="hero-value">{{ $invoiceCount }}</div>
+                                    <div class="hero-value">{{ $pendingInvoiceCount }}</div>
                                 </div>
                                 <div class="hero-metric">
                                     <span class="hero-label">Total bill amount</span>
-                                    <div class="hero-value">{{ $totalBillAmount }}</div>
+                                    <div class="hero-value">{{ $totalPendingBillAmount }}</div>
                                 </div>
                             </div>
                         </div>
@@ -392,33 +392,7 @@
         </div>
 
         <div class="col-12 col-xl-4">
-            <div class="card spotlight-card">
-                <div class="card-body">
-                    <span class="spotlight-badge">
-                        <i class="bx bx-wallet-alt"></i>
-                        Outstanding snapshot
-                    </span>
-                    <div class="spotlight-value">{{ $totalOutstandingAmount }}</div>
-                    <p class="spotlight-copy">
-                        Current unpaid amount across invoices that still need collection focus.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-xl-4">
             <div class="stats-grid">
-                <div class="card metric-card">
-                    <div class="card-body">
-                        <span class="metric-icon blue">
-                            <i class="bx bx-receipt"></i>
-                        </span>
-                        <div class="metric-title">Approved receipt</div>
-                        <h3 class="metric-value">{{ $approvedReceiptCount }}</h3>
-                        <span class="metric-note">Verified collections</span>
-                    </div>
-                </div>
-
                 <div class="card metric-card">
                     <div class="card-body">
                         <span class="metric-icon red">
@@ -432,29 +406,20 @@
 
                 <div class="card metric-card">
                     <div class="card-body">
-                        <span class="metric-icon orange">
-                            <i class="bx bx-money"></i>
+                        <span class="metric-icon red">
+                            <i class="bx bx-time-five"></i>
                         </span>
-                        <div class="metric-title">Total bill amount</div>
-                        <h3 class="metric-value">{{ $totalBillAmount }}</h3>
-                        <span class="metric-note">Gross invoiced value</span>
-                    </div>
-                </div>
-
-                <div class="card metric-card">
-                    <div class="card-body">
-                        <span class="metric-icon green">
-                            <i class="bx bx-bar-chart-alt-2"></i>
-                        </span>
-                        <div class="metric-title">Total bill count</div>
-                        <h3 class="metric-value">{{ $invoiceCount }}</h3>
-                        <span class="metric-note">Invoices raised</span>
+                        <div class="metric-title">Unapproved receipt amount</div>
+                        <h3 class="metric-value">{{ $unapprovedReceivedAmount }}</h3>
+                        <span class="metric-note">Pending confirmation</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-xl-8">
+        
+
+        <div class="col-12 col-xl-12">
             <div class="card table-card">
                 <div class="card-header">
                     <h5 class="table-title">Old pending invoices</h5>
