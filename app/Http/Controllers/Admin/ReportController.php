@@ -14,6 +14,7 @@ use App\Models\Salesperson;
 // Export & PDF
 use App\Exports\SalesReportExport;
 use App\Exports\CashReportExport;
+use App\Exports\FirmLedgerExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -107,104 +108,104 @@ class ReportController extends Controller
         }
     }
 
-    /**
-     * ----------------------------------------------------------
-     * FIRM LEDGER DETAIL REPORT
-     * ----------------------------------------------------------
-     * Shows detailed entries (Invoices + Receipts)
-     */
-    public function firmLedgerDetailsReport(Request $request)
-    {
-        try {
-            $firmId = $request->firm_id;
+    // /**
+    //  * ----------------------------------------------------------
+    //  * FIRM LEDGER DETAIL REPORT
+    //  * ----------------------------------------------------------
+    //  * Shows detailed entries (Invoices + Receipts)
+    //  */
+    // public function firmLedgerDetailsReport(Request $request)
+    // {
+    //     try {
+    //         $firmId = $request->firm_id;
 
-            // Fetch firms list
-            $firms = Customer::where('status', 'active')
-                ->orderBy('firm_name')
-                ->get(['id', 'firm_name']);
+    //         // Fetch firms list
+    //         $firms = Customer::where('status', 'active')
+    //             ->orderBy('firm_name')
+    //             ->get(['id', 'firm_name']);
 
-            // Initialize variables
-            $selectedFirm = null;
-            $ledgerEntries = collect();
+    //         // Initialize variables
+    //         $selectedFirm = null;
+    //         $ledgerEntries = collect();
 
-            $totalPendingAmount = 0;
-            $totalBillAmount = 0;
-            $totalReceiptAmount = 0;
-            $totalDiscountAmount = 0;
+    //         $totalPendingAmount = 0;
+    //         $totalBillAmount = 0;
+    //         $totalReceiptAmount = 0;
+    //         $totalDiscountAmount = 0;
 
-            if ($firmId) {
+    //         if ($firmId) {
 
-                // Selected firm details
-                $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
+    //             // Selected firm details
+    //             $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
 
-                /**
-                 * Invoice Entries (Debit)
-                 */
-                $invoiceEntries = Invoice::select(
-                        'id',
-                        'date',
-                        'invoice_no as reference_no',
-                        DB::raw("'invoice' as entry_type"),
-                        DB::raw('COALESCE(payable_amount, amount) as debit'),
-                        DB::raw('0 as credit'),
-                        DB::raw('COALESCE(discount_amount, 0) as discount'),
-                        DB::raw('NULL as remark')
-                    )
-                    ->where('firm_id', $firmId)
-                    ->get();
+    //             /**
+    //              * Invoice Entries (Debit)
+    //              */
+    //             $invoiceEntries = Invoice::select(
+    //                     'id',
+    //                     'date',
+    //                     'invoice_no as reference_no',
+    //                     DB::raw("'invoice' as entry_type"),
+    //                     DB::raw('COALESCE(payable_amount, amount) as debit'),
+    //                     DB::raw('0 as credit'),
+    //                     DB::raw('COALESCE(discount_amount, 0) as discount'),
+    //                     DB::raw('NULL as remark')
+    //                 )
+    //                 ->where('firm_id', $firmId)
+    //                 ->get();
 
-                /**
-                 * Receipt Entries (Credit)
-                 */
-                $receiptEntries = Receipt::select(
-                        'id',
-                        'date',
-                        'receipt_no as reference_no',
-                        DB::raw("'receipt' as entry_type"),
-                        DB::raw('0 as debit'),
-                        'given_amount as credit',
-                        DB::raw('COALESCE(discount, 0) as discount'),
-                        'remark'
-                    )
-                    ->where('firm_id', $firmId)
-                    ->where('status', 'accpet')
-                    ->get();
+    //             /**
+    //              * Receipt Entries (Credit)
+    //              */
+    //             $receiptEntries = Receipt::select(
+    //                     'id',
+    //                     'date',
+    //                     'receipt_no as reference_no',
+    //                     DB::raw("'receipt' as entry_type"),
+    //                     DB::raw('0 as debit'),
+    //                     'given_amount as credit',
+    //                     DB::raw('COALESCE(discount, 0) as discount'),
+    //                     'remark'
+    //                 )
+    //                 ->where('firm_id', $firmId)
+    //                 ->where('status', 'accpet')
+    //                 ->get();
 
-                /**
-                 * Merge & Sort Entries
-                 */
-                $ledgerEntries = $invoiceEntries
-                    ->concat($receiptEntries)
-                    ->sortBy([['date','asc'],['id','asc']])
-                    ->values();
+    //             /**
+    //              * Merge & Sort Entries
+    //              */
+    //             $ledgerEntries = $invoiceEntries
+    //                 ->concat($receiptEntries)
+    //                 ->sortBy([['date','asc'],['id','asc']])
+    //                 ->values();
 
-                /**
-                 * Running Balance Calculation
-                 */
-                $runningBalance = 0;
-                $ledgerEntries = $ledgerEntries->reverse()->map(function ($entry) use (&$runningBalance) {
-                    $runningBalance += (float)$entry->debit - (float)$entry->credit;
-                    $entry->running_balance = $runningBalance;
-                    return $entry;
-                })->reverse()->values();
+    //             /**
+    //              * Running Balance Calculation
+    //              */
+    //             $runningBalance = 0;
+    //             $ledgerEntries = $ledgerEntries->reverse()->map(function ($entry) use (&$runningBalance) {
+    //                 $runningBalance += (float)$entry->debit - (float)$entry->credit;
+    //                 $entry->running_balance = $runningBalance;
+    //                 return $entry;
+    //             })->reverse()->values();
 
-                // Totals
-                $totalBillAmount = $invoiceEntries->sum('debit');
-                $totalReceiptAmount = $receiptEntries->sum('credit');
-                $totalDiscountAmount = $invoiceEntries->sum('discount') + $receiptEntries->sum('discount');
-                $totalPendingAmount = $totalBillAmount - $totalReceiptAmount;
-            }
+    //             // Totals
+    //             $totalBillAmount = $invoiceEntries->sum('debit');
+    //             $totalReceiptAmount = $receiptEntries->sum('credit');
+    //             $totalDiscountAmount = $invoiceEntries->sum('discount') + $receiptEntries->sum('discount');
+    //             $totalPendingAmount = $totalBillAmount - $totalReceiptAmount;
+    //         }
 
-            return view('admin.report.firm-ledger-details', compact(
-                'firms','firmId','selectedFirm','ledgerEntries',
-                'totalPendingAmount','totalBillAmount','totalReceiptAmount','totalDiscountAmount'
-            ));
+    //         return view('admin.report.firm-ledger-details', compact(
+    //             'firms','firmId','selectedFirm','ledgerEntries',
+    //             'totalPendingAmount','totalBillAmount','totalReceiptAmount','totalDiscountAmount'
+    //         ));
 
-        } catch (\Exception $e) {
-            Log::error('Firm Ledger Details Error: '.$e->getMessage());
-            return back()->with('error', 'Something went wrong!');
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         Log::error('Firm Ledger Details Error: '.$e->getMessage());
+    //         return back()->with('error', 'Something went wrong!');
+    //     }
+    // }
 
     /**
      * ----------------------------------------------------------
@@ -235,44 +236,6 @@ class ReportController extends Controller
             return back()->with('error', 'Something went wrong!');
         }
     }
-
-    /**
-     * ----------------------------------------------------------
-     * CASH REPORT
-     * ----------------------------------------------------------
-     * Shows payment mode-wise totals (cash, card, upi, bank)
-     */
-    // public function caashReport(Request $request)
-    // {
-    //     try {
-    //         $date = $request->date ?? Carbon::today()->toDateString();
-
-    //         $reports = DB::table('receipts')
-    //             ->join('invoices', 'receipts.invoice_id', '=', 'invoices.id')
-    //             ->join('customers', 'invoices.firm_id', '=', 'customers.id')
-    //             ->join('salespersons', 'invoices.salesperson_id', '=', 'salespersons.id')
-    //             ->select(
-    //                 'receipts.receipt_no',
-    //                 'customers.firm_name',
-    //                 'salespersons.name as salesman_name',
-
-    //                 // Mode-wise totals
-    //                 DB::raw("SUM(CASE WHEN receipts.mode='cash' THEN receipts.given_amount ELSE 0 END) as cash_total"),
-    //                 DB::raw("SUM(CASE WHEN receipts.mode='card' THEN receipts.given_amount ELSE 0 END) as cheque_total"),
-    //                 DB::raw("SUM(CASE WHEN receipts.mode='upi' THEN receipts.given_amount ELSE 0 END) as upi_total"),
-    //                 DB::raw("SUM(CASE WHEN receipts.mode='bank' THEN receipts.given_amount ELSE 0 END) as rtgs_total")
-    //             )
-    //             ->whereDate('receipts.created_at', $date)
-    //             ->groupBy('receipts.receipt_no','customers.firm_name','salespersons.name')
-    //             ->get();
-
-    //         return view('admin.report.cash', compact('reports','date'));
-
-    //     } catch (\Exception $e) {
-    //         Log::error('Cash Report Error: '.$e->getMessage());
-    //         return back()->with('error', 'Something went wrong!');
-    //     }
-    // }
 
     /**
      * ----------------------------------------------------------
@@ -469,6 +432,174 @@ class ReportController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Cash PDF Export Error: '.$e->getMessage());
+            return back()->with('error', 'PDF export failed!');
+        }
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * FIRM LEDGER DETAIL REPORT
+     * ----------------------------------------------------------
+     * Shows detailed entries (Invoices + Receipts)
+     */
+    public function firmLedgerDetailsReport(Request $request)
+    {
+        try {
+            $firmId = $request->firm_id;
+
+            // Get all firms
+            $firms = Customer::where('status', 'active')
+                ->orderBy('firm_name')
+                ->get(['id', 'firm_name']);
+
+            // Default values
+            $data = [
+                'selectedFirm' => null,
+                'ledgerEntries' => collect(),
+                'totalPendingAmount' => 0,
+                'totalBillAmount' => 0,
+                'totalReceiptAmount' => 0,
+                'totalDiscountAmount' => 0,
+            ];
+
+            // If firm selected → fetch data
+            if ($firmId) {
+                $data = $this->getFirmLedgerData($firmId);
+            }
+
+            return view('admin.report.firm-ledger-details', array_merge(
+                compact('firms', 'firmId'),
+                $data
+            ));
+
+        } catch (\Exception $e) {
+            Log::error('Firm Ledger Error: ' . $e->getMessage());
+            return back()->with('error', 'Something went wrong!');
+        }
+    }
+
+
+    /**
+     * ----------------------------------------------------------
+     * COMMON DATA FUNCTION (USED EVERYWHERE)
+     * ----------------------------------------------------------
+     */
+    private function getFirmLedgerData($firmId)
+    {
+        // Firm info
+        $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
+
+        // Invoice (Debit)
+        $invoiceEntries = Invoice::select(
+                'id',
+                'date',
+                'invoice_no as reference_no',
+                DB::raw("'invoice' as entry_type"),
+                DB::raw('COALESCE(payable_amount, amount) as debit'),
+                DB::raw('0 as credit'),
+                DB::raw('COALESCE(discount_amount, 0) as discount'),
+                DB::raw('NULL as remark')
+            )
+            ->where('firm_id', $firmId)
+            ->get();
+
+        // Receipt (Credit)
+        $receiptEntries = Receipt::select(
+                'id',
+                'date',
+                'receipt_no as reference_no',
+                DB::raw("'receipt' as entry_type"),
+                DB::raw('0 as debit'),
+                'given_amount as credit',
+                DB::raw('COALESCE(discount, 0) as discount'),
+                'remark'
+            )
+            ->where('firm_id', $firmId)
+            ->where('status', 'accpet')
+            ->get();
+
+        // Merge + Sort
+        $ledgerEntries = $invoiceEntries
+            ->concat($receiptEntries)
+            ->sortBy([['date','asc'],['id','asc']])
+            ->values();
+
+        // Running Balance
+        $runningBalance = 0;
+        $ledgerEntries = $ledgerEntries->reverse()->map(function ($entry) use (&$runningBalance) {
+            $runningBalance += (float)$entry->debit - (float)$entry->credit;
+            $entry->running_balance = $runningBalance;
+            return $entry;
+        })->reverse()->values();
+
+        // Totals
+        $totalBillAmount = $invoiceEntries->sum('debit');
+        $totalReceiptAmount = $receiptEntries->sum('credit');
+        $totalDiscountAmount = $invoiceEntries->sum('discount') + $receiptEntries->sum('discount');
+        $totalPendingAmount = $totalBillAmount - $totalReceiptAmount;
+
+        return compact(
+            'selectedFirm',
+            'ledgerEntries',
+            'totalBillAmount',
+            'totalReceiptAmount',
+            'totalDiscountAmount',
+            'totalPendingAmount'
+        );
+    }
+
+
+    /**
+     * ----------------------------------------------------------
+     * EXPORT EXCEL
+     * ----------------------------------------------------------
+     */
+    public function firmLedgerExcel(Request $request)
+    {
+        try {
+            $firmId = $request->firm_id;
+
+            if (!$firmId) {
+                return back()->with('error', 'Please select firm');
+            }
+
+            $data = $this->getFirmLedgerData($firmId);
+
+            return Excel::download(
+                new FirmLedgerExport($data),
+                'firm-ledger.xlsx'
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Excel Export Error: ' . $e->getMessage());
+            return back()->with('error', 'Excel export failed!');
+        }
+    }
+
+
+    /**
+     * ----------------------------------------------------------
+     * EXPORT PDF
+     * ----------------------------------------------------------
+     */
+    public function firmLedgerPdf(Request $request)
+    {
+        try {
+            $firmId = $request->firm_id;
+
+            if (!$firmId) {
+                return back()->with('error', 'Please select firm');
+            }
+
+            $data = $this->getFirmLedgerData($firmId);
+
+            $pdf = PDF::loadView('admin.report.firm-ledger-pdf', $data);
+
+            return $pdf->download('firm-ledger.pdf');
+
+        } catch (\Exception $e) {
+            dd($e);
+            Log::error('PDF Export Error: ' . $e->getMessage());
             return back()->with('error', 'PDF export failed!');
         }
     }
