@@ -51,6 +51,18 @@
                         </div>
                     </form>
 
+                    <div class="mb-3">
+                        <a href="{{ route('admin.sales.person.report.excel', request()->all()) }}" 
+                        class="btn btn-success">
+                            Export Excel
+                        </a>
+
+                        <a href="{{ route('admin.sales.person.report.pdf', request()->all()) }}" 
+                        class="btn btn-danger">
+                            Export PDF
+                        </a>
+                    </div>
+
                     {{-- Table Section --}}
                     <div class="table-responsive text-nowrap">
                         <table class="table table-bordered" id="receiptTable">

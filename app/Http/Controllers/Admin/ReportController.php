@@ -10,6 +10,11 @@ use App\Models\Invoice;
 use App\Models\Receipt;
 use App\Models\Salesperson;
 
+
+use App\Exports\SalesReportExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 use Carbon\Carbon;
 
 use Illuminate\Support\Facades\DB;
@@ -172,7 +177,11 @@ class ReportController extends Controller
             )
             ->join('customers', 'customers.id', '=', 'invoices.firm_id')
             ->join('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
-            ->leftJoin('receipts', 'receipts.invoice_id', '=', 'invoices.id')
+            //  IMPORTANT: Filter non-deleted receipts
+            ->leftJoin('receipts', function ($join) {
+                $join->on('receipts.invoice_id', '=', 'invoices.id')
+                    ->whereNull('receipts.deleted_at');
+            })
             ->where('invoices.status', 'pending')
 
             ->groupBy(
@@ -184,7 +193,8 @@ class ReportController extends Controller
             )
 
             // ✅ Add this line
-            ->orderBy('customers.firm_name', 'asc');
+            ->orderBy('customers.firm_name', 'asc')
+            ->orderBy('invoices.date', 'asc');
 
         // Filter by Salesperson
         if ($request->filled('salesman_id')) {
@@ -228,6 +238,70 @@ class ReportController extends Controller
             ->get();
 
         return view('admin.report.cash', compact('reports','date'));
+    }
+
+    private function getReportData($request)
+    {
+        $salesmanId = $request->salesman_id;
+
+        $query = Invoice::select(
+                'invoices.id',
+                'invoices.invoice_no',
+                'invoices.date',
+                'customers.firm_name',
+                'salespersons.name as salesman_name',
+                'invoices.payable_amount',
+
+                DB::raw('COALESCE(SUM(receipts.given_amount),0) as received_amount'),
+
+                DB::raw('(invoices.payable_amount - COALESCE(SUM(receipts.given_amount),0)) as remaining_amount')
+            )
+            ->join('customers', 'customers.id', '=', 'invoices.firm_id')
+            ->join('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
+            //  IMPORTANT: Filter non-deleted receipts
+            ->leftJoin('receipts', function ($join) {
+                $join->on('receipts.invoice_id', '=', 'invoices.id')
+                    ->whereNull('receipts.deleted_at');
+            })
+
+            ->where('invoices.status', 'pending')
+
+            ->groupBy(
+                'invoices.id',
+                'invoices.invoice_no',
+                'invoices.date', // ✅ important (missing earlier)
+                'customers.firm_name',
+                'salespersons.name',
+                'invoices.payable_amount'
+            )
+
+            ->orderBy('customers.firm_name', 'asc')
+            ->orderBy('invoices.date', 'asc');
+
+        // ✅ Filter by Salesperson
+        if (!empty($salesmanId)) {
+            $query->where('invoices.salesperson_id', $salesmanId);
+        }
+
+        return $query->get();
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $reports = $this->getReportData($request);
+
+        return Excel::download(new SalesReportExport($reports), 'sales_report.xlsx');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $reports = $this->getReportData($request);
+
+        $totalAmount = $reports->sum('remaining_amount');
+
+        $pdf = Pdf::loadView('admin.report.sales_report_pdf', compact('reports', 'totalAmount'));
+
+        return $pdf->download('sales_report.pdf');
     }
 
     
