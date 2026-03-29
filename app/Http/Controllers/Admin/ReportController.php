@@ -439,7 +439,6 @@ class ReportController extends Controller
             );
 
         } catch (\Exception $e) {
-            dd($e);
             Log::error('Cash Excel Export Error: '.$e->getMessage());
             return back()->with('error', 'Excel export failed!');
         }
