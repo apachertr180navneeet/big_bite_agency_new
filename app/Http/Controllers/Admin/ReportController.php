@@ -4,218 +4,397 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+
+// Models
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Receipt;
 use App\Models\Salesperson;
 
-
+// Export & PDF
 use App\Exports\SalesReportExport;
+use App\Exports\CashReportExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 
+// Helpers
 use Carbon\Carbon;
-
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ReportController extends Controller
 {
+    /**
+     * ----------------------------------------------------------
+     * FIRM LEDGER SUMMARY REPORT
+     * ----------------------------------------------------------
+     * Shows total debit, credit and balance for each firm
+     */
     public function firmLedgerReport(Request $request)
     {
-        $firmId = $request->firm_id;
+        try {
+            // Get selected firm filter (if any)
+            $firmId = $request->firm_id;
 
-        $firms = Customer::where('status', 'active')
-            ->orderBy('firm_name')
-            ->get(['id', 'firm_name']);
+            // Fetch active firms for dropdown
+            $firms = Customer::where('status', 'active')
+                ->orderBy('firm_name')
+                ->get(['id', 'firm_name']);
 
-        $invoiceTotals = Invoice::select(
-                'firm_id',
-                DB::raw('SUM(COALESCE(payable_amount, amount)) as total_debit')
-            )
-            ->groupBy('firm_id');
+            /**
+             * Subquery: Total Debit (Invoices)
+             */
+            $invoiceTotals = Invoice::select(
+                    'firm_id',
+                    DB::raw('SUM(COALESCE(payable_amount, amount)) as total_debit')
+                )
+                ->groupBy('firm_id');
 
-        $receiptTotals = Receipt::select(
-                'firm_id',
-                DB::raw('SUM(given_amount) as total_credit')
-            )
-            ->where('status', 'accpet')
-            ->groupBy('firm_id');
+            /**
+             * Subquery: Total Credit (Receipts)
+             */
+            $receiptTotals = Receipt::select(
+                    'firm_id',
+                    DB::raw('SUM(given_amount) as total_credit')
+                )
+                ->where('status', 'accpet')
+                ->groupBy('firm_id');
 
-        $reports = Customer::query()
-            ->select(
-                'customers.id',
-                'customers.firm_name',
-                DB::raw('COALESCE(invoice_totals.total_debit, 0) as total_debit'),
-                DB::raw('COALESCE(receipt_totals.total_credit, 0) as total_credit'),
-                DB::raw('COALESCE(invoice_totals.total_debit, 0) - COALESCE(receipt_totals.total_credit, 0) as balance')
-            )
-            ->leftJoinSub($invoiceTotals, 'invoice_totals', function ($join) {
-                $join->on('invoice_totals.firm_id', '=', 'customers.id');
-            })
-            ->leftJoinSub($receiptTotals, 'receipt_totals', function ($join) {
-                $join->on('receipt_totals.firm_id', '=', 'customers.id');
-            })
-            ->when($firmId, function ($query) use ($firmId) {
-                $query->where('customers.id', $firmId);
-            })
-            ->orderBy('customers.firm_name')
-            ->get();
+            /**
+             * Main Query:
+             * Combine debit & credit using LEFT JOIN
+             */
+            $reports = Customer::query()
+                ->select(
+                    'customers.id',
+                    'customers.firm_name',
 
-        $totalDebit = $reports->sum('total_debit');
-        $totalCredit = $reports->sum('total_credit');
-        $totalBalance = $reports->sum('balance');
+                    // Debit & Credit
+                    DB::raw('COALESCE(invoice_totals.total_debit, 0) as total_debit'),
+                    DB::raw('COALESCE(receipt_totals.total_credit, 0) as total_credit'),
 
-        return view('admin.report.firm-ledger', compact(
-            'reports',
-            'firms',
-            'firmId',
-            'totalDebit',
-            'totalCredit',
-            'totalBalance'
-        ));
+                    // Balance Calculation
+                    DB::raw('COALESCE(invoice_totals.total_debit, 0) - COALESCE(receipt_totals.total_credit, 0) as balance')
+                )
+                ->leftJoinSub($invoiceTotals, 'invoice_totals', function ($join) {
+                    $join->on('invoice_totals.firm_id', '=', 'customers.id');
+                })
+                ->leftJoinSub($receiptTotals, 'receipt_totals', function ($join) {
+                    $join->on('receipt_totals.firm_id', '=', 'customers.id');
+                })
+
+                // Apply filter if firm selected
+                ->when($firmId, function ($query) use ($firmId) {
+                    $query->where('customers.id', $firmId);
+                })
+
+                ->orderBy('customers.firm_name')
+                ->get();
+
+            // Calculate totals
+            return view('admin.report.firm-ledger', [
+                'reports' => $reports,
+                'firms' => $firms,
+                'firmId' => $firmId,
+                'totalDebit' => $reports->sum('total_debit'),
+                'totalCredit' => $reports->sum('total_credit'),
+                'totalBalance' => $reports->sum('balance'),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Firm Ledger Report Error: '.$e->getMessage());
+            return back()->with('error', 'Something went wrong!');
+        }
     }
 
+    /**
+     * ----------------------------------------------------------
+     * FIRM LEDGER DETAIL REPORT
+     * ----------------------------------------------------------
+     * Shows detailed entries (Invoices + Receipts)
+     */
     public function firmLedgerDetailsReport(Request $request)
     {
-        $firmId = $request->firm_id;
+        try {
+            $firmId = $request->firm_id;
 
-        $firms = Customer::where('status', 'active')
-            ->orderBy('firm_name')
-            ->get(['id', 'firm_name']);
+            // Fetch firms list
+            $firms = Customer::where('status', 'active')
+                ->orderBy('firm_name')
+                ->get(['id', 'firm_name']);
 
-        $selectedFirm = null;
-        $ledgerEntries = collect();
-        $totalPendingAmount = 0;
-        $totalBillAmount = 0;
-        $totalReceiptAmount = 0;
-        $totalDiscountAmount = 0;
+            // Initialize variables
+            $selectedFirm = null;
+            $ledgerEntries = collect();
 
-        if ($firmId) {
-            $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
+            $totalPendingAmount = 0;
+            $totalBillAmount = 0;
+            $totalReceiptAmount = 0;
+            $totalDiscountAmount = 0;
 
-            $invoiceEntries = Invoice::query()
-                ->select(
-                    'id',
-                    'date',
-                    'invoice_no as reference_no',
-                    DB::raw("'invoice' as entry_type"),
-                    DB::raw('COALESCE(payable_amount, amount) as debit'),
-                    DB::raw('0 as credit'),
-                    DB::raw('COALESCE(discount_amount, 0) as discount'),
-                    DB::raw('NULL as remark')
-                )
-                ->where('firm_id', $firmId)
-                ->get();
+            if ($firmId) {
 
-            $receiptEntries = Receipt::query()
-                ->select(
-                    'id',
-                    'date',
-                    'receipt_no as reference_no',
-                    DB::raw("'receipt' as entry_type"),
-                    DB::raw('0 as debit'),
-                    'given_amount as credit',
-                    DB::raw('COALESCE(discount, 0) as discount'),
-                    'remark'
-                )
-                ->where('firm_id', $firmId)
-                ->where('status', 'accpet')
-                ->get();
+                // Selected firm details
+                $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
 
-            $ledgerEntries = $invoiceEntries
-                ->concat($receiptEntries)
-                ->sortBy([
-                    ['date', 'asc'],
-                    ['id', 'asc'],
-                ])
-                ->values();
+                /**
+                 * Invoice Entries (Debit)
+                 */
+                $invoiceEntries = Invoice::select(
+                        'id',
+                        'date',
+                        'invoice_no as reference_no',
+                        DB::raw("'invoice' as entry_type"),
+                        DB::raw('COALESCE(payable_amount, amount) as debit'),
+                        DB::raw('0 as credit'),
+                        DB::raw('COALESCE(discount_amount, 0) as discount'),
+                        DB::raw('NULL as remark')
+                    )
+                    ->where('firm_id', $firmId)
+                    ->get();
 
-            $runningBalance = 0;
-            $ledgerEntries = $ledgerEntries->reverse()->values()->map(function ($entry) use (&$runningBalance) {
-                $runningBalance += (float) $entry->debit - (float) $entry->credit;
-                $entry->running_balance = $runningBalance;
+                /**
+                 * Receipt Entries (Credit)
+                 */
+                $receiptEntries = Receipt::select(
+                        'id',
+                        'date',
+                        'receipt_no as reference_no',
+                        DB::raw("'receipt' as entry_type"),
+                        DB::raw('0 as debit'),
+                        'given_amount as credit',
+                        DB::raw('COALESCE(discount, 0) as discount'),
+                        'remark'
+                    )
+                    ->where('firm_id', $firmId)
+                    ->where('status', 'accpet')
+                    ->get();
 
-                return $entry;
-            })->reverse()->values();
+                /**
+                 * Merge & Sort Entries
+                 */
+                $ledgerEntries = $invoiceEntries
+                    ->concat($receiptEntries)
+                    ->sortBy([['date','asc'],['id','asc']])
+                    ->values();
 
-            $totalBillAmount = $invoiceEntries->sum('debit');
-            $totalReceiptAmount = $receiptEntries->sum('credit');
-            $totalDiscountAmount = $invoiceEntries->sum('discount') + $receiptEntries->sum('discount');
-            $totalPendingAmount = $totalBillAmount - $totalReceiptAmount;
+                /**
+                 * Running Balance Calculation
+                 */
+                $runningBalance = 0;
+                $ledgerEntries = $ledgerEntries->reverse()->map(function ($entry) use (&$runningBalance) {
+                    $runningBalance += (float)$entry->debit - (float)$entry->credit;
+                    $entry->running_balance = $runningBalance;
+                    return $entry;
+                })->reverse()->values();
+
+                // Totals
+                $totalBillAmount = $invoiceEntries->sum('debit');
+                $totalReceiptAmount = $receiptEntries->sum('credit');
+                $totalDiscountAmount = $invoiceEntries->sum('discount') + $receiptEntries->sum('discount');
+                $totalPendingAmount = $totalBillAmount - $totalReceiptAmount;
+            }
+
+            return view('admin.report.firm-ledger-details', compact(
+                'firms','firmId','selectedFirm','ledgerEntries',
+                'totalPendingAmount','totalBillAmount','totalReceiptAmount','totalDiscountAmount'
+            ));
+
+        } catch (\Exception $e) {
+            Log::error('Firm Ledger Details Error: '.$e->getMessage());
+            return back()->with('error', 'Something went wrong!');
         }
-
-        return view('admin.report.firm-ledger-details', compact(
-            'firms',
-            'firmId',
-            'selectedFirm',
-            'ledgerEntries',
-            'totalPendingAmount',
-            'totalBillAmount',
-            'totalReceiptAmount',
-            'totalDiscountAmount'
-        ));
     }
 
+    /**
+     * ----------------------------------------------------------
+     * SALESPERSON REPORT
+     * ----------------------------------------------------------
+     * Shows pending invoices with received & remaining amount
+     */
     public function salespersionreport(Request $request)
     {
-        $salesmanId = $request->salesman_id;
+        try {
+            $salesmanId = $request->salesman_id;
 
-        // Active Salesmen for dropdown
-        $salesmen = Salesperson::where('status', 'active')->get();
+            // Fetch salespersons
+            $salesmen = Salesperson::where('status', 'active')->get();
 
-        // Invoice Report with Receipt Deduction
-        $query = Invoice::select(
+            // Get report data (reusable method)
+            $reports = $this->getReportData($request);
+
+            return view('admin.report.salesman', [
+                'reports' => $reports,
+                'salesmen' => $salesmen,
+                'salesmanId' => $salesmanId,
+                'totalAmount' => $reports->sum('remaining_amount'),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Sales Report Error: '.$e->getMessage());
+            return back()->with('error', 'Something went wrong!');
+        }
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * CASH REPORT
+     * ----------------------------------------------------------
+     * Shows payment mode-wise totals (cash, card, upi, bank)
+     */
+    // public function caashReport(Request $request)
+    // {
+    //     try {
+    //         $date = $request->date ?? Carbon::today()->toDateString();
+
+    //         $reports = DB::table('receipts')
+    //             ->join('invoices', 'receipts.invoice_id', '=', 'invoices.id')
+    //             ->join('customers', 'invoices.firm_id', '=', 'customers.id')
+    //             ->join('salespersons', 'invoices.salesperson_id', '=', 'salespersons.id')
+    //             ->select(
+    //                 'receipts.receipt_no',
+    //                 'customers.firm_name',
+    //                 'salespersons.name as salesman_name',
+
+    //                 // Mode-wise totals
+    //                 DB::raw("SUM(CASE WHEN receipts.mode='cash' THEN receipts.given_amount ELSE 0 END) as cash_total"),
+    //                 DB::raw("SUM(CASE WHEN receipts.mode='card' THEN receipts.given_amount ELSE 0 END) as cheque_total"),
+    //                 DB::raw("SUM(CASE WHEN receipts.mode='upi' THEN receipts.given_amount ELSE 0 END) as upi_total"),
+    //                 DB::raw("SUM(CASE WHEN receipts.mode='bank' THEN receipts.given_amount ELSE 0 END) as rtgs_total")
+    //             )
+    //             ->whereDate('receipts.created_at', $date)
+    //             ->groupBy('receipts.receipt_no','customers.firm_name','salespersons.name')
+    //             ->get();
+
+    //         return view('admin.report.cash', compact('reports','date'));
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Cash Report Error: '.$e->getMessage());
+    //         return back()->with('error', 'Something went wrong!');
+    //     }
+    // }
+
+    /**
+     * ----------------------------------------------------------
+     * COMMON REPORT QUERY (REUSABLE)
+     * ----------------------------------------------------------
+     */
+    private function getReportData($request)
+    {
+        return Invoice::select(
                 'invoices.id',
                 'invoices.invoice_no',
                 'invoices.date',
                 'customers.firm_name',
                 'salespersons.name as salesman_name',
                 'invoices.payable_amount',
+
+                // Received amount
                 DB::raw('COALESCE(SUM(receipts.given_amount),0) as received_amount'),
+
+                // Remaining amount
                 DB::raw('(invoices.payable_amount - COALESCE(SUM(receipts.given_amount),0)) as remaining_amount')
             )
             ->join('customers', 'customers.id', '=', 'invoices.firm_id')
             ->join('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
-            //  IMPORTANT: Filter non-deleted receipts
             ->leftJoin('receipts', function ($join) {
                 $join->on('receipts.invoice_id', '=', 'invoices.id')
-                    ->whereNull('receipts.deleted_at');
+                     ->whereNull('receipts.deleted_at');
             })
             ->where('invoices.status', 'pending')
-
             ->groupBy(
                 'invoices.id',
                 'invoices.invoice_no',
+                'invoices.date',
                 'customers.firm_name',
                 'salespersons.name',
                 'invoices.payable_amount'
             )
-
-            // ✅ Add this line
-            ->orderBy('customers.firm_name', 'asc')
-            ->orderBy('invoices.date', 'asc');
-
-        // Filter by Salesperson
-        if ($request->filled('salesman_id')) {
-            $query->where('invoices.salesperson_id', $salesmanId);
-        }
-
-        $reports = $query->get();
-
-        // Total Remaining Amount
-        $totalAmount = $reports->sum('remaining_amount');
-
-        return view('admin.report.salesman', compact('reports','salesmen','salesmanId','totalAmount'));
+            ->when($request->salesman_id, function ($q) use ($request) {
+                $q->where('invoices.salesperson_id', $request->salesman_id);
+            })
+            ->orderBy('customers.firm_name')
+            ->orderBy('invoices.date')
+            ->get();
     }
 
+    /**
+     * ----------------------------------------------------------
+     * EXPORT EXCEL
+     * ----------------------------------------------------------
+     */
+    public function exportExcel(Request $request)
+    {
+        try {
+            return Excel::download(
+                new SalesReportExport($this->getReportData($request)),
+                'sales_report.xlsx'
+            );
 
+        } catch (\Exception $e) {
+            Log::error('Excel Export Error: '.$e->getMessage());
+            return back()->with('error', 'Excel export failed!');
+        }
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * EXPORT PDF
+     * ----------------------------------------------------------
+     */
+    public function exportPdf(Request $request)
+    {
+        try {
+            $reports = $this->getReportData($request);
+
+            $pdf = Pdf::loadView('admin.report.sales_report_pdf', [
+                'reports' => $reports,
+                'totalAmount' => $reports->sum('remaining_amount'),
+            ]);
+
+            return $pdf->download('sales_report.pdf');
+
+        } catch (\Exception $e) {
+            Log::error('PDF Export Error: '.$e->getMessage());
+            return back()->with('error', 'PDF export failed!');
+        }
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * CASH REPORT
+     * ----------------------------------------------------------
+     * Shows payment mode-wise totals (cash, card, upi, bank)
+     */
     public function caashReport(Request $request)
     {
-        $date = $request->date ?? Carbon::today()->toDateString();
+        try {
+            // Default date = today
+            $date = $request->date ?? Carbon::today()->toDateString();
 
-        // Detail Records
-        $reports = DB::table('receipts')
+            // Get report data using reusable function
+            $reports = $this->getCashReportData($date);
+
+            return view('admin.report.cash', compact('reports', 'date'));
+
+        } catch (\Exception $e) {
+            Log::error('Cash Report Error: '.$e->getMessage());
+            return back()->with('error', 'Something went wrong!');
+        }
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * COMMON CASH REPORT QUERY (REUSABLE)
+     * ----------------------------------------------------------
+     * Used for:
+     *  - View
+     *  - Excel Export
+     *  - PDF Export
+     */
+    private function getCashReportData($date)
+    {
+        return DB::table('receipts')
             ->join('invoices', 'receipts.invoice_id', '=', 'invoices.id')
             ->join('customers', 'invoices.firm_id', '=', 'customers.id')
             ->join('salespersons', 'invoices.salesperson_id', '=', 'salespersons.id')
@@ -224,6 +403,7 @@ class ReportController extends Controller
                 'customers.firm_name',
                 'salespersons.name as salesman_name',
 
+                // Mode-wise totals
                 DB::raw("SUM(CASE WHEN receipts.mode='cash' THEN receipts.given_amount ELSE 0 END) as cash_total"),
                 DB::raw("SUM(CASE WHEN receipts.mode='card' THEN receipts.given_amount ELSE 0 END) as cheque_total"),
                 DB::raw("SUM(CASE WHEN receipts.mode='upi' THEN receipts.given_amount ELSE 0 END) as upi_total"),
@@ -236,73 +416,61 @@ class ReportController extends Controller
                 'salespersons.name'
             )
             ->get();
-
-        return view('admin.report.cash', compact('reports','date'));
     }
 
-    private function getReportData($request)
+    /**
+     * ----------------------------------------------------------
+     * EXPORT CASH REPORT TO EXCEL
+     * ----------------------------------------------------------
+     */
+    public function cashReportExportExcel(Request $request)
     {
-        $salesmanId = $request->salesman_id;
+        try {
+            // Get selected date or default today
+            $date = $request->date ?? Carbon::today()->toDateString();
 
-        $query = Invoice::select(
-                'invoices.id',
-                'invoices.invoice_no',
-                'invoices.date',
-                'customers.firm_name',
-                'salespersons.name as salesman_name',
-                'invoices.payable_amount',
+            // Fetch report data
+            $reports = $this->getCashReportData($date);
 
-                DB::raw('COALESCE(SUM(receipts.given_amount),0) as received_amount'),
+            // Download Excel file
+            return Excel::download(
+                new CashReportExport($reports),
+                'cash_report.xlsx'
+            );
 
-                DB::raw('(invoices.payable_amount - COALESCE(SUM(receipts.given_amount),0)) as remaining_amount')
-            )
-            ->join('customers', 'customers.id', '=', 'invoices.firm_id')
-            ->join('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
-            //  IMPORTANT: Filter non-deleted receipts
-            ->leftJoin('receipts', function ($join) {
-                $join->on('receipts.invoice_id', '=', 'invoices.id')
-                    ->whereNull('receipts.deleted_at');
-            })
-
-            ->where('invoices.status', 'pending')
-
-            ->groupBy(
-                'invoices.id',
-                'invoices.invoice_no',
-                'invoices.date', // ✅ important (missing earlier)
-                'customers.firm_name',
-                'salespersons.name',
-                'invoices.payable_amount'
-            )
-
-            ->orderBy('customers.firm_name', 'asc')
-            ->orderBy('invoices.date', 'asc');
-
-        // ✅ Filter by Salesperson
-        if (!empty($salesmanId)) {
-            $query->where('invoices.salesperson_id', $salesmanId);
+        } catch (\Exception $e) {
+            dd($e);
+            Log::error('Cash Excel Export Error: '.$e->getMessage());
+            return back()->with('error', 'Excel export failed!');
         }
-
-        return $query->get();
     }
 
-    public function exportExcel(Request $request)
+    /**
+     * ----------------------------------------------------------
+     * EXPORT CASH REPORT TO PDF
+     * ----------------------------------------------------------
+     */
+    public function cashReportExportPdf(Request $request)
     {
-        $reports = $this->getReportData($request);
+        try {
+            // Get selected date or default today
+            $date = $request->date ?? Carbon::today()->toDateString();
 
-        return Excel::download(new SalesReportExport($reports), 'sales_report.xlsx');
+            // Fetch report data
+            $reports = $this->getCashReportData($date);
+
+            // Load PDF view
+            $pdf = Pdf::loadView('admin.report.cash_report_pdf', [
+                'reports' => $reports,
+                'date' => $date,
+            ]);
+
+            // Download PDF
+            return $pdf->download('cash_report.pdf');
+
+        } catch (\Exception $e) {
+            Log::error('Cash PDF Export Error: '.$e->getMessage());
+            return back()->with('error', 'PDF export failed!');
+        }
     }
-
-    public function exportPdf(Request $request)
-    {
-        $reports = $this->getReportData($request);
-
-        $totalAmount = $reports->sum('remaining_amount');
-
-        $pdf = Pdf::loadView('admin.report.sales_report_pdf', compact('reports', 'totalAmount'));
-
-        return $pdf->download('sales_report.pdf');
-    }
-
-    
 }

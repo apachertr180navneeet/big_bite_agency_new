@@ -77,6 +77,8 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('firm-ledger-details-report', [ReportController::class, 'firmLedgerDetailsReport'])->name('firm.ledger.details.report');
         Route::get('/sales-person-report/excel', [ReportController::class, 'exportExcel'])->name('sales.person.report.excel');
         Route::get('/sales-person-report/pdf', [ReportController::class, 'exportPdf'])->name('sales.person.report.pdf');
+        Route::get('/cash-report/excel', [ReportController::class, 'cashReportExportExcel'])->name('cash.report.excel');
+        Route::get('/cash-report/pdf', [ReportController::class, 'cashReportExportPdf'])->name('cash.report.pdf');
     });
 
 });

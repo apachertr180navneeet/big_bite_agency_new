@@ -31,6 +31,16 @@
                 </div>
             </form>
 
+            <div class="col-md-6 mt-4 mb-4">
+                <a href="{{ route('admin.cash.report.excel', request()->all()) }}" class="btn btn-success">
+                    Export Excel
+                </a>
+
+                <a href="{{ route('admin.cash.report.pdf', request()->all()) }}" class="btn btn-danger">
+                    Export PDF
+                </a>
+            </div>
+
             {{-- Table --}}
             <div class="table-responsive">
                 <table class="table table-bordered">
