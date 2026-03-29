@@ -163,6 +163,7 @@ class ReportController extends Controller
         $query = Invoice::select(
                 'invoices.id',
                 'invoices.invoice_no',
+                'invoices.date',
                 'customers.firm_name',
                 'salespersons.name as salesman_name',
                 'invoices.payable_amount',
@@ -171,10 +172,7 @@ class ReportController extends Controller
             )
             ->join('customers', 'customers.id', '=', 'invoices.firm_id')
             ->join('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
-
-            // Left join receipts
             ->leftJoin('receipts', 'receipts.invoice_id', '=', 'invoices.id')
-
             ->where('invoices.status', 'pending')
 
             ->groupBy(
@@ -183,7 +181,10 @@ class ReportController extends Controller
                 'customers.firm_name',
                 'salespersons.name',
                 'invoices.payable_amount'
-            );
+            )
+
+            // ✅ Add this line
+            ->orderBy('customers.firm_name', 'asc');
 
         // Filter by Salesperson
         if ($request->filled('salesman_id')) {

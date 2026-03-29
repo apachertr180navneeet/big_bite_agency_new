@@ -58,6 +58,7 @@
                             <thead>
                                 <tr>
                                     <th>Invoice No.</th>
+                                    <th>Date</th>
                                     <th>Firm Name</th>
                                     <th>Sales Person</th>
                                     <th>Amount</th>
@@ -68,6 +69,7 @@
                                 @forelse($reports as $report)
                                     <tr>
                                         <td>{{ $report->invoice_no }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($report->date)->format('d/m/Y') }}</td>
                                         <td>{{ $report->firm_name }}</td>
                                         <td>{{ $report->salesman_name }}</td>
                                         <td>{{ number_format($report->remaining_amount,2) }}</td>
