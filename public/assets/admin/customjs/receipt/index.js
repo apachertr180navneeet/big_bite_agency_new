@@ -84,7 +84,22 @@ $(document).ready(function () {
 
                 {
                     data: "mode",
-                    render: data => data ? data.toUpperCase() : "-"
+                    render: function (data) {
+
+                        if (!data) return "-";
+
+                        let mode = data.toLowerCase();
+
+                        if (mode === "bank") {
+                            return "RTGS / NEFT";
+                        }
+
+                        if (mode === "card") {
+                            return "Cheque";
+                        }
+
+                        return data.toUpperCase();
+                    }
                 },
 
                 {
@@ -479,10 +494,10 @@ $(document).ready(function () {
         invoiceDropdown.html('<option value="">Loading...</option>');
 
         if (firm_id !== "") {
-
+            let finalUrl = "https://shrilalitrealestate.com/bigbite/public/get-pending-invoices/" + firm_id;
             $.ajax({
 
-                url: "/get-pending-invoices/" + firm_id,
+                url: finalUrl,
                 type: "GET",
 
                 success: function (data) {

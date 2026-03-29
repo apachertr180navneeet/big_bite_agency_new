@@ -63,12 +63,12 @@
 			</a>
 		</li>
 
-		<li class="menu-item {{ request()->is('admin/firm-ledger-report') ? 'active' : ''}}">
+		{{--  <li class="menu-item {{ request()->is('admin/firm-ledger-report') ? 'active' : ''}}">
 			<a href="{{route('admin.firm.ledger.report')}}" class="menu-link">
 				<i class="menu-icon tf-icons bx bx-home-circle"></i>
 				<div data-i18n="Dashboard">Firm Ledger Report</div>
 			</a>
-		</li>
+		</li>  --}}
 
 		<li class="menu-item {{ request()->is('admin/firm-ledger-details-report') ? 'active' : ''}}">
 			<a href="{{route('admin.firm.ledger.details.report')}}" class="menu-link">

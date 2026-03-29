@@ -194,8 +194,8 @@
 
                                     <option value="cash" {{ $receipt->mode == 'cash' ? 'selected':'' }}>Cash</option>
                                     <option value="upi" {{ $receipt->mode == 'upi' ? 'selected':'' }}>UPI</option>
-                                    <option value="bank" {{ $receipt->mode == 'bank' ? 'selected':'' }}>Bank</option>
-                                    <option value="card" {{ $receipt->mode == 'card' ? 'selected':'' }}>Card</option>
+                                    <option value="bank" {{ $receipt->mode === 'bank' ? 'selected' : '' }}>RTGS / NEFT</option>
+                                    <option value="card" {{ $receipt->mode === 'card' ? 'selected' : '' }}>Cheque</option>
 
                                 </select>
 

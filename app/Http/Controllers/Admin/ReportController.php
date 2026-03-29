@@ -121,8 +121,8 @@ class ReportController extends Controller
             $ledgerEntries = $invoiceEntries
                 ->concat($receiptEntries)
                 ->sortBy([
-                    ['date', 'desc'],
-                    ['id', 'desc'],
+                    ['date', 'asc'],
+                    ['id', 'asc'],
                 ])
                 ->values();
 
@@ -214,9 +214,9 @@ class ReportController extends Controller
                 'salespersons.name as salesman_name',
 
                 DB::raw("SUM(CASE WHEN receipts.mode='cash' THEN receipts.given_amount ELSE 0 END) as cash_total"),
-                DB::raw("SUM(CASE WHEN receipts.mode='cheque' THEN receipts.given_amount ELSE 0 END) as cheque_total"),
+                DB::raw("SUM(CASE WHEN receipts.mode='card' THEN receipts.given_amount ELSE 0 END) as cheque_total"),
                 DB::raw("SUM(CASE WHEN receipts.mode='upi' THEN receipts.given_amount ELSE 0 END) as upi_total"),
-                DB::raw("SUM(CASE WHEN receipts.mode='rtgs' THEN receipts.given_amount ELSE 0 END) as rtgs_total")
+                DB::raw("SUM(CASE WHEN receipts.mode='bank' THEN receipts.given_amount ELSE 0 END) as rtgs_total")
             )
             ->whereDate('receipts.created_at', $date)
             ->groupBy(

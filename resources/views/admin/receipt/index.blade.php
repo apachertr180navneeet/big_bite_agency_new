@@ -56,8 +56,8 @@
                                 <option value="">All</option>
                                 <option value="cash" {{ request('mode') === 'cash' ? 'selected' : '' }}>Cash</option>
                                 <option value="upi" {{ request('mode') === 'upi' ? 'selected' : '' }}>UPI</option>
-                                <option value="bank" {{ request('mode') === 'bank' ? 'selected' : '' }}>Bank</option>
-                                <option value="card" {{ request('mode') === 'card' ? 'selected' : '' }}>Card</option>
+                                <option value="bank" {{ request('mode') === 'bank' ? 'selected' : '' }}>RTGS / NEFT</option>
+                                <option value="card" {{ request('mode') === 'chq' ? 'selected' : '' }}>Cheque</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -109,7 +109,12 @@
     const deleteReceiptUrl = "{{ route('admin.receipt.delete', ':id') }}";
     const editReceiptUrl = "{{ route('admin.receipt.edit', ':id') }}";
     const changeReceiptStatusUrl = "{{ route('admin.receipt.status', ':id') }}";
+    const getPendingInvoicesUrl = "{{ route('get.pending.invoices', ':id') }}";
 </script>
+<script>
+    let window.baseUrl = "{{ url('/') }}";
+</script>
+<!-- IMPORTANT: ye baad me hona chahiye -->
 <script src="{{ asset('assets/admin/customjs/receipt/index.js') }}"></script>
 @endsection
 

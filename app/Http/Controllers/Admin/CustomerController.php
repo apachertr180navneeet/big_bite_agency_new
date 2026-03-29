@@ -101,7 +101,7 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'firm_name' => 'required|string|max:100',
+            'firm_name' => 'required|string|max:100|unique:customers,firm_name',
             'phone' => 'required|digits_between:10,15|unique:customers,phone',
         ]);
 
