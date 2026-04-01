@@ -19,5 +19,11 @@
 				<div data-i18n="Dashboard">Dashboard</div>
 			</a>
 		</li>
+		<li class="menu-item {{ request()->is('user/firm-ledger-report') ? 'active' : ''}}">
+			<a href="{{route('user.firm.ledger.report')}}" class="menu-link">
+				<i class="menu-icon tf-icons bx bx-book-content"></i>
+				<div data-i18n="Firm Ledger">Firm Ledger</div>
+			</a>
+		</li>
 	</ul>
 </aside>

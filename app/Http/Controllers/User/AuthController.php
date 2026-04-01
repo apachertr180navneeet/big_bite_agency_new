@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\File;
 use App\Models\Salesperson;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\Receipt;
 
 class AuthController extends Controller
 {
@@ -172,6 +173,69 @@ class AuthController extends Controller
             })
             ->values();
         return view('user.dashboard.index', compact('pendingInvoices'));
+    }
+
+    public function firmLedgerReport(Request $request)
+    {
+        $salesperson = Auth::guard('sales')->user();
+        $firmId = $request->firm_id;
+
+        $firms = Customer::query()
+            ->whereIn('id', function ($query) use ($salesperson) {
+                $query->select('firm_id')
+                    ->from('invoices')
+                    ->where('salesperson_id', $salesperson->id)
+                    ->whereNull('deleted_at');
+            })
+            ->orderBy('firm_name')
+            ->get(['id', 'firm_name']);
+
+        $invoiceTotals = Invoice::query()
+            ->select(
+                'firm_id',
+                \DB::raw('SUM(COALESCE(payable_amount, amount)) as total_debit')
+            )
+            ->where('salesperson_id', $salesperson->id)
+            ->groupBy('firm_id');
+
+        $receiptTotals = Receipt::query()
+            ->join('invoices', 'invoices.id', '=', 'receipts.invoice_id')
+            ->select(
+                'receipts.firm_id',
+                \DB::raw('SUM(receipts.given_amount) as total_credit')
+            )
+            ->where('invoices.salesperson_id', $salesperson->id)
+            ->where('receipts.status', 'accpet')
+            ->groupBy('receipts.firm_id');
+
+        $reports = Customer::query()
+            ->select(
+                'customers.id',
+                'customers.firm_name',
+                \DB::raw('COALESCE(invoice_totals.total_debit, 0) as total_debit'),
+                \DB::raw('COALESCE(receipt_totals.total_credit, 0) as total_credit'),
+                \DB::raw('COALESCE(invoice_totals.total_debit, 0) - COALESCE(receipt_totals.total_credit, 0) as balance')
+            )
+            ->joinSub($invoiceTotals, 'invoice_totals', function ($join) {
+                $join->on('invoice_totals.firm_id', '=', 'customers.id');
+            })
+            ->leftJoinSub($receiptTotals, 'receipt_totals', function ($join) {
+                $join->on('receipt_totals.firm_id', '=', 'customers.id');
+            })
+            ->when($firmId, function ($query) use ($firmId) {
+                $query->where('customers.id', $firmId);
+            })
+            ->orderBy('customers.firm_name')
+            ->get();
+
+        return view('user.dashboard.firm-ledger', [
+            'reports' => $reports,
+            'firms' => $firms,
+            'firmId' => $firmId,
+            'totalDebit' => $reports->sum('total_debit'),
+            'totalCredit' => $reports->sum('total_credit'),
+            'totalBalance' => $reports->sum('balance'),
+        ]);
     }
 
 

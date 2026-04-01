@@ -102,7 +102,8 @@ Route::name('user.')->prefix('user')->group(function () {
     Route::post('reset-password', [AuthController::class, 'submitResetPasswordForm'])->name('reset.password.post');
 
     Route::middleware(['user'])->group(function () {
-    	Route::get('dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+        Route::get('dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+        Route::get('firm-ledger-report', [AuthController::class, 'firmLedgerReport'])->name('firm.ledger.report');
         Route::get('receipt/create', [UserReceiptController::class, 'create'])->name('receipt.create');
         Route::post('receipt/store', [UserReceiptController::class, 'store'])->name('receipt.store');
         Route::get('receipt/pending-invoices/{firm_id}', [UserReceiptController::class, 'getPendingInvoices'])->name('receipt.pending.invoices');
