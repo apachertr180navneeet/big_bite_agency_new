@@ -8,12 +8,18 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Receipt;
+use App\Models\Salesperson;
 
 class ReceiptController extends Controller
 {
     public function index()
     {
-        return view('admin.receipt.index');
+        $salespersons = Salesperson::query()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('admin.receipt.index', compact('salespersons'));
     }
 
     public function getall(Request $request)
@@ -25,6 +31,7 @@ class ReceiptController extends Controller
             'mode' => 'nullable|in:cash,upi,bank,card',
             'manager_status' => 'nullable|in:pending,accpet,rejected',
             'status' => 'nullable|in:pending,accpet,rejected',
+            'salesperson_id' => 'nullable|exists:salespersons,id',
         ]);
 
         $query = Receipt::query()->with([
@@ -50,6 +57,12 @@ class ReceiptController extends Controller
 
         if (!empty($validated['status'])) {
             $query->where('status', $validated['status']);
+        }
+
+        if (!empty($validated['salesperson_id'])) {
+            $query->whereHas('invoice', function ($invoiceQuery) use ($validated) {
+                $invoiceQuery->where('salesperson_id', $validated['salesperson_id']);
+            });
         }
 
         $totalRecords = Receipt::count();
@@ -216,7 +229,7 @@ class ReceiptController extends Controller
         $receipt = Receipt::findOrFail($id);
         $invoiceId = $receipt->invoice_id;
 
-        $receipt->delete();
+        $receipt->forceDelete();
 
         $this->updateInvoiceStatus($invoiceId);
 

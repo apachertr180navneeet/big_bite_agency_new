@@ -42,6 +42,17 @@
                                 value="{{ request('date_from') }}">
                         </div>
                         <div class="col-md-2">
+                            <label for="filter_salesperson_id" class="form-label">Salesperson</label>
+                            <select id="filter_salesperson_id" name="salesperson_id" class="form-select">
+                                <option value="">All</option>
+                                @foreach ($salespersons as $salesperson)
+                                    <option value="{{ $salesperson->id }}" {{ (string) request('salesperson_id') === (string) $salesperson->id ? 'selected' : '' }}>
+                                        {{ $salesperson->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <label for="filter_date_to" class="form-label">End Date</label>
                             <input
                                 type="date"
@@ -66,7 +77,6 @@
                                 <option value="">All</option>
                                 <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
                                 <option value="accpet" {{ request('status') === 'accpet' ? 'selected' : '' }}>Accept</option>
-                                <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
                             </select>
                         </div>
                         <div class="col-md-12 d-flex align-items-end gap-2">

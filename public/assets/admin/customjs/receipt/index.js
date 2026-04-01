@@ -51,6 +51,7 @@ $(document).ready(function () {
                     d.date_from = $("#filter_date_from").val();
                     d.date_to = $("#filter_date_to").val();
                     d.mode = $("#filter_mode").val();
+                    d.salesperson_id = $("#filter_salesperson_id").val();
                     d.manager_status = $("#filter_manager_status").val();
                     d.status = $("#filter_status").val();
 
@@ -119,12 +120,6 @@ $(document).ready(function () {
                                     data-status="accpet">
                                     Approve
                                 </button>
-
-                                <button class="btn btn-sm btn-danger change-receipt-status"
-                                    data-id="${row.id}"
-                                    data-status="rejected">
-                                    Reject
-                                </button>
                             `;
                         }
 
@@ -184,6 +179,7 @@ $(document).ready(function () {
         $("#filter_receipt_no").val("");
         $("#filter_date_from").val("");
         $("#filter_date_to").val("");
+        $("#filter_salesperson_id").val("");
         $("#filter_mode").val("");
         $("#filter_manager_status").val("");
         $("#filter_status").val("");
@@ -199,7 +195,7 @@ $(document).ready(function () {
 
     });
 
-    $("#filter_mode, #filter_manager_status, #filter_status").on("change", function () {
+    $("#filter_salesperson_id, #filter_mode, #filter_manager_status, #filter_status").on("change", function () {
         reloadReceiptTable(true);
     });
 
