@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 use App\Models\Salesperson;
+use App\Models\Customer;
 use App\Models\Invoice;
 
 class AuthController extends Controller
@@ -152,7 +153,13 @@ class AuthController extends Controller
             ->withSum('receipts as paid_amount', 'given_amount')
             ->where('salesperson_id', $salesperson->id)
             ->where('status','pending')
-            ->orderBy('invoices.date', 'asc') // oldest first
+            ->orderBy('invoices.date', 'asc')
+            ->orderBy(
+                Customer::select('firm_name')
+                    ->whereColumn('customers.id', 'invoices.firm_id')
+                    ->limit(1),
+                'asc'
+            )
             ->get()
             ->map(function ($invoice) {
                 $paidAmount = (float) ($invoice->paid_amount ?? 0);
