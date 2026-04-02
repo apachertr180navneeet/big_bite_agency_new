@@ -36,8 +36,7 @@ class CustomerController extends Controller
             $search = $request->search['value'];
 
             $query->where(function ($q) use ($search) {
-                $q->Where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%");
+                $q->Where('firm_name', 'like', "%{$search}%");
             });
         }
 

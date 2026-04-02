@@ -192,6 +192,12 @@ class AuthController extends Controller
     {
         $salesperson = Auth::guard('sales')->user();
         $firmId = $request->firm_id;
+        $selectedFirm = null;
+        $ledgerEntries = collect();
+        $totalBillAmount = 0;
+        $totalReceiptAmount = 0;
+        $totalDiscountAmount = 0;
+        $totalPendingAmount = 0;
 
         $firms = Customer::query()
             ->whereIn('id', function ($query) use ($salesperson) {
@@ -241,6 +247,55 @@ class AuthController extends Controller
             ->orderBy('customers.firm_name')
             ->get();
 
+        if ($firmId) {
+            $selectedFirm = Customer::query()
+                ->where('id', $firmId)
+                ->whereIn('id', $firms->pluck('id'))
+                ->first(['id', 'firm_name', 'phone']);
+
+            if ($selectedFirm) {
+                $invoiceEntries = Invoice::query()
+                    ->select(
+                        'id',
+                        'date',
+                        'invoice_no as reference_no',
+                        \DB::raw("'invoice' as entry_type"),
+                        \DB::raw('COALESCE(payable_amount, amount) as debit'),
+                        \DB::raw('0 as credit'),
+                        \DB::raw('COALESCE(discount_amount, 0) as discount')
+                    )
+                    ->where('salesperson_id', $salesperson->id)
+                    ->where('firm_id', $firmId)
+                    ->get();
+
+                $receiptEntries = Receipt::query()
+                    ->join('invoices', 'invoices.id', '=', 'receipts.invoice_id')
+                    ->select(
+                        'receipts.id',
+                        'receipts.date',
+                        'receipts.receipt_no as reference_no',
+                        \DB::raw("'receipt' as entry_type"),
+                        \DB::raw('0 as debit'),
+                        'receipts.given_amount as credit',
+                        \DB::raw('COALESCE(receipts.discount, 0) as discount')
+                    )
+                    ->where('invoices.salesperson_id', $salesperson->id)
+                    ->where('receipts.firm_id', $firmId)
+                    ->where('receipts.status', 'accpet')
+                    ->get();
+
+                $ledgerEntries = $invoiceEntries
+                    ->concat($receiptEntries)
+                    ->sortBy([['date', 'asc'], ['id', 'asc']])
+                    ->values();
+
+                $totalBillAmount = $invoiceEntries->sum('debit');
+                $totalReceiptAmount = $receiptEntries->sum('credit');
+                $totalDiscountAmount = $invoiceEntries->sum('discount') + $receiptEntries->sum('discount');
+                $totalPendingAmount = $totalBillAmount - $totalReceiptAmount;
+            }
+        }
+
         return view('user.dashboard.firm-ledger', [
             'reports' => $reports,
             'firms' => $firms,
@@ -248,6 +303,12 @@ class AuthController extends Controller
             'totalDebit' => $reports->sum('total_debit'),
             'totalCredit' => $reports->sum('total_credit'),
             'totalBalance' => $reports->sum('balance'),
+            'selectedFirm' => $selectedFirm,
+            'ledgerEntries' => $ledgerEntries,
+            'totalBillAmount' => $totalBillAmount,
+            'totalReceiptAmount' => $totalReceiptAmount,
+            'totalDiscountAmount' => $totalDiscountAmount,
+            'totalPendingAmount' => $totalPendingAmount,
         ]);
     }
 
