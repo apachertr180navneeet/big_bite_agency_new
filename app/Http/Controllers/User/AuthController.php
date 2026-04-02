@@ -146,14 +146,27 @@ class AuthController extends Controller
      * Admin Dashboard Data
      * Fetch summary statistics for dashboard cards
      */
-    public function dashboard()
+    public function dashboard(Request $request)
     {   
         $salesperson = Auth::guard('sales')->user();
+        $firmId = $request->query('firm_id');
+
+        $firms = Customer::query()
+            ->select('customers.id', 'customers.firm_name')
+            ->join('invoices', 'invoices.firm_id', '=', 'customers.id')
+            ->where('invoices.salesperson_id', $salesperson->id)
+            ->where('invoices.status', 'pending')
+            ->distinct()
+            ->orderBy('customers.firm_name')
+            ->get();
 
         $pendingInvoices = Invoice::with('firm:id,firm_name')
             ->withSum('receipts as paid_amount', 'given_amount')
             ->where('salesperson_id', $salesperson->id)
             ->where('status','pending')
+            ->when($firmId, function ($query) use ($firmId) {
+                $query->where('firm_id', $firmId);
+            })
             ->orderBy('invoices.date', 'asc')
             ->orderBy(
                 Customer::select('firm_name')
@@ -172,7 +185,7 @@ class AuthController extends Controller
                 return $invoice->remaining_amount > 0;
             })
             ->values();
-        return view('user.dashboard.index', compact('pendingInvoices'));
+        return view('user.dashboard.index', compact('pendingInvoices', 'firms', 'firmId'));
     }
 
     public function firmLedgerReport(Request $request)

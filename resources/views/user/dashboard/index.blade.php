@@ -1,5 +1,6 @@
 @extends('user.layouts.app')
 @section('style')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
     .pending-invoice-card {
         border: 1px solid #e7e7ff;
@@ -24,6 +25,29 @@
         font-size: 0.95rem;
         font-weight: 600;
         color: #566a7f;
+    }
+
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container .select2-selection--single {
+        height: calc(2.25rem + 2px);
+        border: 1px solid #d9dee3;
+        border-radius: 0.375rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        color: #697a8d;
+        line-height: 1.5rem;
+        padding-left: 0;
+        padding-right: 1.5rem;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 0.5rem;
     }
 </style>
 @endsection  
@@ -65,6 +89,24 @@
                 </div>
 
                 <div class="card-body">
+                    <form method="GET" action="{{ route('user.dashboard') }}" class="row g-3 align-items-end mb-4">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label for="firm_id" class="form-label">Filter By Firm</label>
+                            <select id="firm_id" name="firm_id" class="form-select">
+                                <option value="">All Firms</option>
+                                @foreach($firms as $firm)
+                                    <option value="{{ $firm->id }}" {{ (string) ($firmId ?? '') === (string) $firm->id ? 'selected' : '' }}>
+                                        {{ $firm->firm_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-auto">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="{{ route('user.dashboard') }}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+
                     @if($pendingInvoices->isEmpty())
                         <div class="text-center py-4 text-muted">
                             No pending invoices found.
@@ -160,5 +202,14 @@
 @endsection
 
 @section('script')
-
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(function () {
+        $('#firm_id').select2({
+            placeholder: 'Select firm',
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
 @endsection
