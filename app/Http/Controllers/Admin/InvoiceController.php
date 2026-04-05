@@ -26,10 +26,15 @@ class InvoiceController extends Controller
      */
     public function getall(Request $request)
     {
+        $userId = Auth::id();
+        
         $query = Invoice::query()->with([
             'firm:id,firm_name',
             'salesperson:id,name'
         ]);
+
+
+        $query->where('user_id',$userId);
 
         /**
          * ---------------------------------------------------------
@@ -175,6 +180,7 @@ class InvoiceController extends Controller
             'discount_percent' => $discountPercent,
             'discount_amount' => $discountAmount,
             'payable_amount' => $payableAmount,
+            'user_id'   => $userId
         ]);
 
         return response()->json([

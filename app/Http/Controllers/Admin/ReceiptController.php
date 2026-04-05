@@ -24,6 +24,8 @@ class ReceiptController extends Controller
 
     public function getall(Request $request)
     {
+        $userId = Auth::id();
+
         $validated = $request->validate([
             'receipt_no' => 'nullable|string|max:100',
             'date_from' => 'nullable|date',
@@ -38,6 +40,8 @@ class ReceiptController extends Controller
             'firm:id,firm_name',
             'invoice:id,invoice_no',
         ]);
+
+        $query->where('user_id',$userId);
 
         if (!empty($validated['receipt_no'])) {
             $query->where('receipt_no', 'like', '%' . $validated['receipt_no'] . '%');
@@ -103,6 +107,8 @@ class ReceiptController extends Controller
 
     public function store(Request $request)
     {
+        $userId = Auth::id();
+        
         $request->validate([
             'date' => 'required|date',
             'receipt_no' => 'required|string|max:100|unique:receipts,receipt_no',
@@ -143,7 +149,8 @@ class ReceiptController extends Controller
             'mode' => $request->mode,
             'manager_status' => 'pending',
             'status' => 'pending',
-            'remark' => $request->remark
+            'remark' => $request->remark,
+            'user_id' => $userId
         ]);
 
         $this->updateInvoiceStatus($invoice->id);

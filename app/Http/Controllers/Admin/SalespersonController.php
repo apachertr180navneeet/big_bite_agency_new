@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Salesperson;
+use Illuminate\Support\Facades\Auth;
 
 class SalespersonController extends Controller
 {
@@ -14,7 +15,7 @@ class SalespersonController extends Controller
      * @return void
      */
     public function index(){
-       return view("admin.salesperson.index");
+        return view("admin.salesperson.index");
     }
 
     /**
@@ -24,7 +25,11 @@ class SalespersonController extends Controller
      */
     public function getall(Request $request)
     {
+        $userId = Auth::id();
+
         $query = Salesperson::query();
+
+        $query->where('user_id',$userId);
 
         /**
          * ---------------------------------------------------------
@@ -101,6 +106,7 @@ class SalespersonController extends Controller
      */
     public function store(Request $request)
     {
+        $userId = Auth::id();
         /*--------------------------------------------------------------------
         | Step 1: Validate Incoming Request Data
         |--------------------------------------------------------------------
@@ -134,6 +140,7 @@ class SalespersonController extends Controller
             'dob'               => $request->dob,
             'alternative_phone' => $request->alternative_phone,
             'salesperson_code'  => $request->salesperson_code,
+            'user_id'           => $userId
         ]);
 
 

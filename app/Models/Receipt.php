@@ -25,6 +25,7 @@ class Receipt extends Model
         'manager_status',
         'status',
         'remark',
+        'user_id',
     ];
 
     public function firm()

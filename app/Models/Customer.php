@@ -24,6 +24,7 @@ class Customer extends Model
         'state',
         'discount',
         'status',
+        'user_id',
     ];
 
     protected $casts = [

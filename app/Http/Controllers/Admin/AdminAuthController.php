@@ -340,11 +340,14 @@ class AdminAuthController extends Controller
 
     public function adminDashboard()
     {
+        $userId = Auth::id();
+
         $acceptedReceiptTotals = Receipt::select(
                 'invoice_id',
                 DB::raw('SUM(given_amount) as total_paid')
             )
             ->where('status', 'accpet')
+            ->where('user_id',$userId)
             ->groupBy('invoice_id');
 
         /* ------------------------------
@@ -352,7 +355,7 @@ class AdminAuthController extends Controller
         ------------------------------*/
 
         // Total number of pending invoices
-        $pendingInvoiceCount = Invoice::where('status', 'pending')->count();
+        $pendingInvoiceCount = Invoice::where('status', 'pending')->where('user_id',$userId)->count();
 
         // Total remaining pending amount after accepted receipts
         $totalPendingBillAmount = Invoice::query()
@@ -360,13 +363,14 @@ class AdminAuthController extends Controller
                 $join->on('accepted_receipts.invoice_id', '=', 'invoices.id');
             })
             ->where('invoices.status', 'pending')
+            ->where('invoices.user_id',$userId)
             ->sum(DB::raw('GREATEST(invoices.payable_amount - COALESCE(accepted_receipts.total_paid, 0), 0)'));
 
         // Pending receipts count
-        $unapprovedReceiptCount = Receipt::where('status', 'pending')->count();
+        $unapprovedReceiptCount = Receipt::where('status', 'pending')->where('user_id',$userId)->count();
 
         // Pending receipts total amount
-        $unapprovedReceivedAmount = Receipt::where('status', 'pending')->sum('given_amount');
+        $unapprovedReceivedAmount = Receipt::where('status', 'pending')->where('user_id',$userId)->sum('given_amount');
 
         /* ------------------------------
         | Oldest Pending Invoices
@@ -381,6 +385,7 @@ class AdminAuthController extends Controller
             ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
             ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
             ->where('invoices.status', 'pending')
+            ->where('invoices.user_id',$userId)
             ->orderBy('invoices.date', 'asc')
             ->limit(20)
             ->get();

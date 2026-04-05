@@ -23,7 +23,8 @@ class Salesperson extends Authenticatable
         'dob',
         'alternative_phone',
         'status',
-        'salesperson_code'
+        'salesperson_code',
+        'user_id',
     ];
 
     protected $hidden = [

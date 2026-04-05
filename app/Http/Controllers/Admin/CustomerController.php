@@ -24,7 +24,13 @@ class CustomerController extends Controller
      */
     public function getall(Request $request)
     {
+        $userId = Auth::id();
+
         $query = Customer::query();
+
+
+        $query->where('user_id',$userId);
+
 
         /**
          * ---------------------------------------------------------
@@ -99,6 +105,7 @@ class CustomerController extends Controller
      */
     public function store(Request $request)
     {
+        $userId = Auth::id();
         $request->validate([
             'firm_name' => 'required|string|max:100|unique:customers,firm_name',
             'phone' => 'required|digits_between:10,15|unique:customers,phone',
@@ -107,6 +114,7 @@ class CustomerController extends Controller
         $customer = Customer::create([
             'firm_name' => $request->firm_name,
             'phone' => $request->phone,
+            'user_id' => $userId
         ]);
 
         return response()->json([

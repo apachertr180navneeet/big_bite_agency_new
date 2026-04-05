@@ -215,11 +215,13 @@ class ReportController extends Controller
      */
     public function salespersionreport(Request $request)
     {
+        $userId = Auth::id();
+
         try {
             $salesmanId = $request->salesman_id;
 
             // Fetch salespersons
-            $salesmen = Salesperson::where('status', 'active')->get();
+            $salesmen = Salesperson::where('status', 'active')->where('user_id',$userId)->get();
 
             // Get report data (reusable method)
             $reports = $this->getReportData($request);
@@ -265,6 +267,7 @@ class ReportController extends Controller
                      ->whereNull('receipts.deleted_at');
             })
             ->where('invoices.status', 'pending')
+            ->where('invoices.user_id',$userId)
             ->groupBy(
                 'invoices.id',
                 'invoices.invoice_no',
@@ -357,6 +360,8 @@ class ReportController extends Controller
      */
     private function getCashReportData($date)
     {
+        $userId = Auth::id();
+
         return DB::table('receipts')
             ->join('invoices', 'receipts.invoice_id', '=', 'invoices.id')
             ->join('customers', 'invoices.firm_id', '=', 'customers.id')
@@ -373,6 +378,7 @@ class ReportController extends Controller
                 DB::raw("SUM(CASE WHEN receipts.mode='bank' THEN receipts.given_amount ELSE 0 END) as rtgs_total")
             )
             ->whereDate('receipts.created_at', $date)
+            ->where('receipts.user_id',$userId)
             ->groupBy(
                 'receipts.receipt_no',
                 'customers.firm_name',
@@ -444,11 +450,13 @@ class ReportController extends Controller
      */
     public function firmLedgerDetailsReport(Request $request)
     {
+        $userId = Auth::id();
         try {
             $firmId = $request->firm_id;
 
             // Get all firms
             $firms = Customer::where('status', 'active')
+                ->where('user_id',$userId)
                 ->orderBy('firm_name')
                 ->get(['id', 'firm_name']);
 
@@ -486,6 +494,8 @@ class ReportController extends Controller
      */
     private function getFirmLedgerData($firmId)
     {
+        $userId = Auth::id();
+
         // Firm info
         $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
 
@@ -501,6 +511,7 @@ class ReportController extends Controller
                 DB::raw('NULL as remark')
             )
             ->where('firm_id', $firmId)
+            ->where('user_id',$userId)
             ->get();
 
         // Receipt (Credit)
@@ -516,6 +527,7 @@ class ReportController extends Controller
             )
             ->where('firm_id', $firmId)
             ->where('status', 'accpet')
+            ->where('user_id',$userId)
             ->get();
 
         // Merge + Sort
