@@ -101,6 +101,7 @@ class ReceiptController extends Controller
             'manager_status' => 'pending',
             'status' => 'pending',
             'remark' => $request->remark,
+            'user_id' => $invoice->user_id
         ]);
 
         return response()->json([

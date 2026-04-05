@@ -137,7 +137,7 @@
     .hero-visual img {
         position: relative;
         z-index: 2;
-        max-width: 100%;
+        max-width: 41%;
         height: 210px;
         object-fit: contain;
         transform: translateY(12px);

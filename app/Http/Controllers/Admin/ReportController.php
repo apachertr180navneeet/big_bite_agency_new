@@ -22,6 +22,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class ReportController extends Controller
 {
@@ -246,6 +247,7 @@ class ReportController extends Controller
      */
     private function getReportData($request)
     {
+         $userId = Auth::id();
         return Invoice::select(
                 'invoices.id',
                 'invoices.invoice_no',
@@ -377,7 +379,7 @@ class ReportController extends Controller
                 DB::raw("SUM(CASE WHEN receipts.mode='upi' THEN receipts.given_amount ELSE 0 END) as upi_total"),
                 DB::raw("SUM(CASE WHEN receipts.mode='bank' THEN receipts.given_amount ELSE 0 END) as rtgs_total")
             )
-            ->whereDate('receipts.created_at', $date)
+            ->whereDate('receipts.date', $date)
             ->where('receipts.user_id',$userId)
             ->groupBy(
                 'receipts.receipt_no',

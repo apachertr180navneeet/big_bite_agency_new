@@ -13,7 +13,8 @@ use App\Models\Customer;
 use App\Models\Salesperson;
 use App\Models\Receipt;
 use Illuminate\Support\Facades\Session;
-
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
 class AdminAuthController extends Controller

@@ -9,13 +9,16 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Receipt;
 use App\Models\Salesperson;
+use Illuminate\Support\Facades\Auth;
 
 class ReceiptController extends Controller
 {
     public function index()
     {
+        $userId = Auth::id();
         $salespersons = Salesperson::query()
             ->where('status', 'active')
+            ->where('user_id',$userId)
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -96,7 +99,9 @@ class ReceiptController extends Controller
 
     public function create()
     {
+        $userId = Auth::id();
         $customers = Customer::where('status', 'active')
+            ->where('user_id',$userId)
             ->orderBy('firm_name')
             ->get(['id', 'firm_name']);
 
@@ -164,13 +169,16 @@ class ReceiptController extends Controller
 
     public function edit($id)
     {
+        $userId = Auth::id();
         $receipt = Receipt::findOrFail($id);
 
         $customers = Customer::where('status', 'active')
+            ->where('user_id',$userId)
             ->orderBy('firm_name')
             ->get(['id', 'firm_name']);
 
         $invoices = Invoice::with('salesperson:id,name')
+            ->where('user_id',$userId)
             ->withSum('receipts as paid_amount', 'given_amount')
             ->orderBy('invoice_no')
             ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id','remark']);

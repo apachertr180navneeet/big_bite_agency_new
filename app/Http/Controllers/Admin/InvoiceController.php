@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\Customer;
 use App\Models\Salesperson;
+use Illuminate\Support\Facades\Auth;
 
 class InvoiceController extends Controller
 {
@@ -134,13 +135,17 @@ class InvoiceController extends Controller
      */
     public function create()
     {
+        $userId = Auth::id();
+
         $customers = Customer::query()
             ->where('status', 'active')
+            ->where('user_id',$userId)
             ->orderBy('firm_name')
             ->get(['id', 'firm_name']);
 
         $salespersons = Salesperson::query()
             ->where('status', 'active')
+            ->where('user_id',$userId)
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -156,6 +161,7 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
+        $userId = Auth::id();
         $request->validate([
             'date' => 'required|date',
             'invoice_no' => 'required|string|max:100|unique:invoices,invoice_no',
@@ -208,15 +214,19 @@ class InvoiceController extends Controller
      */
     public function edit($id)
     {
+        $userId = Auth::id();
+
         $invoice = Invoice::findOrFail($id);
 
         $customers = Customer::query()
             ->where('status', 'active')
+            ->where('user_id',$userId)
             ->orderBy('firm_name')
             ->get(['id', 'firm_name']);
 
         $salespersons = Salesperson::query()
             ->where('status', 'active')
+            ->where('user_id',$userId)
             ->orderBy('name')
             ->get(['id', 'name']);
 

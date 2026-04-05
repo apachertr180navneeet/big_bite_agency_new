@@ -36,7 +36,7 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" name="date" class="form-control" value="{{ old('date', now()->format('Y-m-d')) }}">
+                                <input type="date" name="date" class="form-control" value="{{ old('date', now()->format('Y-m-d')) }}" readonly>
                             </div>
 
                             <div class="col-md-4 mb-3">
@@ -93,7 +93,7 @@
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Given Amount <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" name="given_amount" id="given_amount" class="form-control" value="{{ old('given_amount', 0) }}">
+                                <input type="number" step="0.01" min="0" name="given_amount" id="given_amount" class="form-control" value="{{ old('given_amount', 0) }}" required>
                             </div>
 
                             <div class="col-md-4 mb-3">
@@ -103,7 +103,7 @@
 
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Mode</label>
-                                <select name="mode" class="form-select">
+                                <select name="mode" class="form-select" required>
                                     <option value="">Select Mode</option>
                                     <option value="cash" {{ old('mode') === 'cash' ? 'selected' : '' }}>Cash</option>
                                     <option value="upi" {{ old('mode') === 'upi' ? 'selected' : '' }}>UPI</option>
@@ -114,7 +114,7 @@
 
                             <div class="col-md-12 mb-3">
                                 <label class="form-label">Remark</label>
-                                <input type="text" name="remark" id="remark" class="form-control" placeholder="Enter Remark" value="{{ old('remark') }}">
+                                <input type="text" name="remark" id="remark" class="form-control" placeholder="Enter Remark" value="{{ old('remark') }}" required>
                             </div>
                         </div>
 
