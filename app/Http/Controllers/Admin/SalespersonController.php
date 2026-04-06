@@ -117,7 +117,7 @@ class SalespersonController extends Controller
         --------------------------------------------------------------------*/
         $request->validate([
             'name' => 'required|min:3|max:50',
-            'salesperson_code' => 'required|digits_between:3,15|unique:salespersons,salesperson_code',
+            'salesperson_code' => 'required|unique:salespersons,salesperson_code',
             'mobile' => 'required|digits_between:10,15|unique:salespersons,mobile',
             'email' => 'nullable|email|unique:salespersons,email',
             'password' => 'required|min:6',
