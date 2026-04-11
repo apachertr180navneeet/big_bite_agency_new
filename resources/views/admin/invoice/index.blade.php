@@ -31,9 +31,18 @@
             <div class="card">
                 <div class="card-body">
                     <div class="row g-3 mb-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="filter_invoice_no" class="form-label">Invoice Number</label>
                             <input type="text" id="filter_invoice_no" class="form-control" placeholder="Enter invoice number">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filter_salesperson_id" class="form-label">Salesperson</label>
+                            <select id="filter_salesperson_id" class="form-select">
+                                <option value="">All</option>
+                                @foreach ($salespersons as $salesperson)
+                                    <option value="{{ $salesperson->id }}">{{ $salesperson->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="col-md-2">
                             <label for="filter_date_from" class="form-label">Start Date</label>
@@ -51,7 +60,7 @@
                                 <option value="full_paid">Full Paid</option>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end gap-2">
+                        <div class="col-md-2 d-flex align-items-end gap-2">
                             <button type="button" id="applyInvoiceFilters" class="btn btn-primary">Apply</button>
                             <button type="button" id="resetInvoiceFilters" class="btn btn-outline-secondary">Reset</button>
                         </div>

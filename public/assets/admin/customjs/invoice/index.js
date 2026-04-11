@@ -25,6 +25,7 @@ $(document).ready(function () {
                 type: "GET",
                 data: function (d) {
                     d.invoice_no = $("#filter_invoice_no").val();
+                    d.salesperson_id = $("#filter_salesperson_id").val();
                     d.date_from = $("#filter_date_from").val();
                     d.date_to = $("#filter_date_to").val();
                     d.status = $("#filter_status").val();
@@ -111,6 +112,7 @@ $(document).ready(function () {
 
     $(document).on("click", "#resetInvoiceFilters", function () {
         $("#filter_invoice_no").val("");
+        $("#filter_salesperson_id").val("");
         $("#filter_date_from").val("");
         $("#filter_date_to").val("");
         $("#filter_status").val("");
@@ -249,4 +251,3 @@ $(document).ready(function () {
 
     });
 });
-

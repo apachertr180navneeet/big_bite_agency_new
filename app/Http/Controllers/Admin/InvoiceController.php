@@ -17,7 +17,15 @@ class InvoiceController extends Controller
      * @return void
      */
     public function index(){
-       return view("admin.invoice.index");
+        $userId = Auth::id();
+
+        $salespersons = Salesperson::query()
+            ->where('status', 'active')
+            ->where('user_id', $userId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view("admin.invoice.index", compact('salespersons'));
     }
 
     /**
@@ -49,6 +57,7 @@ class InvoiceController extends Controller
                 $q->where('invoice_no', 'like', "%{$search}%")
                   ->orWhere('date', 'like', "%{$search}%")
                   ->orWhere('status', 'like', "%{$search}%")
+                  ->orWhere('salesperson_id', 'like', "%{$search}%")
                   ->orWhereHas('firm', function ($firmQuery) use ($search) {
                       $firmQuery->where('firm_name', 'like', "%{$search}%");
                   })
@@ -65,6 +74,10 @@ class InvoiceController extends Controller
          */
         if ($request->filled('invoice_no')) {
             $query->where('invoice_no', 'like', '%' . $request->invoice_no . '%');
+        }
+
+        if ($request->filled('salesperson_id')) {
+            $query->where('salesperson_id', $request->salesperson_id);
         }
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
