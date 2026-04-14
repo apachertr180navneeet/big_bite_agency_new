@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Customer;
 use App\Models\Salesperson;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class InvoiceController extends Controller
 {
@@ -33,21 +34,31 @@ class InvoiceController extends Controller
      * Fetch All Invoice Data (With Search + Pagination)
      * ---------------------------------------------------------
      */
+
     public function getall(Request $request)
     {
         $userId = Auth::id();
-        
-        $query = Invoice::query()->with([
-            'firm:id,firm_name',
-            'salesperson:id,name'
-        ]);
-
-
-        $query->where('user_id',$userId);
 
         /**
          * ---------------------------------------------------------
-         * Global Search (Invoice No + Date)
+         * Base Query
+         * ---------------------------------------------------------
+         */
+        $query = Invoice::query()->with([
+            'firm:id,firm_name',
+            'salesperson:id,name'
+        ])->where('user_id', $userId);
+
+        /**
+         * ---------------------------------------------------------
+         * Total Records (Before Filter)
+         * ---------------------------------------------------------
+         */
+        $totalRecords = Invoice::where('user_id', $userId)->count();
+
+        /**
+         * ---------------------------------------------------------
+         * Global Search
          * ---------------------------------------------------------
          */
         if ($request->has('search') && !empty($request->search['value'])) {
@@ -55,21 +66,18 @@ class InvoiceController extends Controller
 
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_no', 'like', "%{$search}%")
-                  ->orWhere('date', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%")
-                  ->orWhere('salesperson_id', 'like', "%{$search}%")
-                  ->orWhereHas('firm', function ($firmQuery) use ($search) {
-                      $firmQuery->where('firm_name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('salesperson', function ($salespersonQuery) use ($search) {
-                      $salespersonQuery->where('name', 'like', "%{$search}%");
-                  });
+                ->orWhere('date', 'like', "%{$search}%")
+                ->orWhere('status', 'like', "%{$search}%")
+                ->orWhere('salesperson_id', 'like', "%{$search}%")
+                ->orWhereHas('firm', function ($firmQuery) use ($search) {
+                    $firmQuery->where('firm_name', 'like', "%{$search}%");
+                });
             });
         }
 
         /**
          * ---------------------------------------------------------
-         * Extra Filters (Invoice Number + Date Range)
+         * Filters
          * ---------------------------------------------------------
          */
         if ($request->filled('invoice_no')) {
@@ -94,13 +102,6 @@ class InvoiceController extends Controller
 
         /**
          * ---------------------------------------------------------
-         * Total Records Count (Before Filtering)
-         * ---------------------------------------------------------
-         */
-        $totalRecords = Invoice::count();
-
-        /**
-         * ---------------------------------------------------------
          * Filtered Records Count
          * ---------------------------------------------------------
          */
@@ -114,32 +115,51 @@ class InvoiceController extends Controller
         $start = max((int) $request->input('start', 0), 0);
         $length = (int) $request->input('length', 10);
 
-        $query = $query->orderBy('id', 'desc');
+        $query->orderBy('id', 'desc');
 
         if ($length === -1) {
-            // DataTables uses -1 to request all rows
-            $invoice = $query->skip($start)->get();
+            $invoices = $query->skip($start)->get();
         } else {
             $length = $length > 0 ? $length : 10;
-            $invoice = $query->skip($start)->take($length)->get();
+            $invoices = $query->skip($start)->take($length)->get();
         }
 
-        $invoice = $invoice->map(function ($item) {
-            $item->firm_name = optional($item->firm)->firm_name;
-            $item->salesperson_name = optional($item->salesperson)->name;
-            return $item;
+        /**
+         * ---------------------------------------------------------
+         * Data Formatting
+         * ---------------------------------------------------------
+         */
+        $invoices = $invoices->map(function ($item) {
+
+            return [
+                'id' => $item->id,
+                'invoice_no' => $item->invoice_no,
+
+                // ✅ Date format here
+                'date' => $item->date 
+                    ? Carbon::parse($item->date)->format('d/m/Y') 
+                    : '',
+
+                'firm_name' => optional($item->firm)->firm_name,
+                'salesperson_name' => optional($item->salesperson)->name,
+
+                'amount' => $item->amount,
+                'discount_percent' => $item->discount_percent,
+                'payable_amount' => $item->payable_amount,
+                'status' => $item->status,
+            ];
         });
 
         /**
          * ---------------------------------------------------------
-         * Return JSON for DataTable
+         * Response
          * ---------------------------------------------------------
          */
         return response()->json([
             "draw" => intval($request->draw),
             "recordsTotal" => $totalRecords,
             "recordsFiltered" => $filteredRecords,
-            "data" => $invoice,
+            "data" => $invoices,
         ]);
     }
 
@@ -176,7 +196,7 @@ class InvoiceController extends Controller
     {
         $userId = Auth::id();
         $request->validate([
-            'date' => 'required|date',
+            'date' => 'required|date|before_or_equal:today',
             'invoice_no' => 'required|string|max:100|unique:invoices,invoice_no',
             'firm_id' => 'required|exists:customers,id',
             'salesperson_id' => 'required|exists:salespersons,id',
@@ -254,7 +274,7 @@ class InvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
 
         $request->validate([
-            'date' => 'required|date',
+             'date' => 'required|date|before_or_equal:today',
             'invoice_no' => 'required|string|max:100|unique:invoices,invoice_no,' . $id,
             'firm_id' => 'required|exists:customers,id',
             'salesperson_id' => 'required|exists:salespersons,id',

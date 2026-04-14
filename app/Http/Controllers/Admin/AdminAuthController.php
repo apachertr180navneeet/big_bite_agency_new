@@ -378,18 +378,17 @@ class AdminAuthController extends Controller
         ------------------------------*/
 
         $pendingInvoices = Invoice::select(
-                'invoices.*',
-                'customers.firm_name as firm_name',
-                'salespersons.name as salesman_name',
-                DB::raw('DATEDIFF(NOW(), invoices.date) as pending_days')
-            )
-            ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
-            ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
-            ->where('invoices.status', 'pending')
-            ->where('invoices.user_id',$userId)
-            ->orderBy('invoices.date', 'asc')
-            ->limit(20)
-            ->get();
+            'invoices.*',
+            'customers.firm_name as firm_name',
+            'salespersons.name as salesman_name',
+            DB::raw('DATEDIFF(NOW(), invoices.date) as pending_days')
+        )
+        ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
+        ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
+        ->where('invoices.status', 'pending')
+        ->where('invoices.user_id', $userId)
+        ->orderBy('invoices.date', 'asc')
+        ->paginate(20);
 
         /* ------------------------------
         | Return Dashboard View

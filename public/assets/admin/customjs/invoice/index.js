@@ -35,7 +35,21 @@ $(document).ready(function () {
 
                 { data: "invoice_no", searchable: true },
 
-                { data: "date", searchable: true },
+                {
+                    data: "date",
+                    searchable: true,
+                    render: function (data) {
+                        if (!data) return '';
+
+                        let date = new Date(data);
+
+                        let day = String(date.getDate()).padStart(2, '0');
+                        let month = String(date.getMonth() + 1).padStart(2, '0');
+                        let year = date.getFullYear();
+
+                        return `${day}/${month}/${year}`;
+                    }
+                },
 
                 { data: "firm_name", searchable: true },
 

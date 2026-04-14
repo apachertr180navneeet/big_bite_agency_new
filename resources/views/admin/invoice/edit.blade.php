@@ -77,6 +77,7 @@
                                     type="date"
                                     name="date"
                                     class="form-control"
+                                    max="{{ date('Y-m-d') }}"
                                     value="{{ old('date', $invoice->date ? \Illuminate\Support\Carbon::parse($invoice->date)->format('Y-m-d') : '') }}"
                                 >
                             </div>

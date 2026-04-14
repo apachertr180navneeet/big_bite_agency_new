@@ -342,6 +342,35 @@
             font-size: 1.35rem;
         }
     }
+
+    .pagination {
+        margin-bottom: 0;
+    }
+
+    .pagination .page-link {
+        border-radius: 8px !important;
+        margin: 0 3px;
+        color: #566a7f;
+        border: 1px solid #e0e6ed;
+        transition: all 0.2s ease;
+        padding: 6px 12px;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #696cff;
+        color: #fff;
+        border-color: #696cff;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #696cff, #5f61e6);
+        border-color: #696cff;
+        color: #fff;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        opacity: 0.5;
+    }
 </style>
 @endsection
 
@@ -448,7 +477,7 @@
                                         </td>
                                         <td>{{ $invoice->firm_name }}</td>
                                         <td>{{ $invoice->salesman_name }}</td>
-                                        <td>{{ date('d-m-Y', strtotime($invoice->created_at)) }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($invoice->date)->format('d/m/Y') }}</td>
                                         <td>
                                             <span class="days-pill">{{ $invoice->pending_days }} Days</span>
                                         </td>
@@ -464,6 +493,26 @@
                             </tbody>
                         </table>
                     </div>
+                    @if ($pendingInvoices->hasPages())
+                        <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap">
+
+                            <!-- Showing info -->
+                            <div class="text-muted small mb-2">
+                                Showing 
+                                {{ $pendingInvoices->firstItem() }} 
+                                to 
+                                {{ $pendingInvoices->lastItem() }} 
+                                of 
+                                {{ $pendingInvoices->total() }} entries
+                            </div>
+
+                            <!-- Pagination -->
+                            <div>
+                                {{ $pendingInvoices->onEachSide(1)->links('pagination::bootstrap-5') }}
+                            </div>
+
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

@@ -86,6 +86,11 @@ class ReceiptController extends Controller
         $receipts = $receipts->map(function ($item) {
             $item->firm_name = optional($item->firm)->firm_name;
             $item->invoice_no = optional($item->invoice)->invoice_no;
+            
+            // Format date to dd/mm/yyyy
+            $item->date = $item->date 
+                ? \Carbon\Carbon::parse($item->date)->format('d/m/Y') 
+                : null;
             return $item;
         });
 

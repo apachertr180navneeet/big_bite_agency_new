@@ -68,7 +68,11 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Date <span class="text-danger">*</span></label>
-                                <input type="date" name="date" class="form-control" value="{{ old('date') }}">
+                                <input type="date" 
+                                    name="date" 
+                                    class="form-control" 
+                                    max="{{ date('Y-m-d') }}"
+                                    value="{{ old('date') }}">
                                 @error('date')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
