@@ -15,7 +15,8 @@ class ReceiptController extends Controller
 {
     public function index()
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         $salespersons = Salesperson::query()
             ->where('status', 'active')
             ->where('user_id',$userId)
@@ -27,7 +28,8 @@ class ReceiptController extends Controller
 
     public function getall(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         $validated = $request->validate([
             'receipt_no' => 'nullable|string|max:100',
@@ -104,7 +106,8 @@ class ReceiptController extends Controller
 
     public function create()
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         $customers = Customer::where('status', 'active')
             ->where('user_id',$userId)
             ->orderBy('firm_name')
@@ -117,7 +120,8 @@ class ReceiptController extends Controller
 
     public function store(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         
         $request->validate([
             'date' => 'required|date',
@@ -174,7 +178,8 @@ class ReceiptController extends Controller
 
     public function edit($id)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         $receipt = Receipt::findOrFail($id);
 
         $customers = Customer::where('status', 'active')

@@ -341,7 +341,8 @@ class AdminAuthController extends Controller
 
     public function adminDashboard()
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         $acceptedReceiptTotals = Receipt::select(
                 'invoice_id',

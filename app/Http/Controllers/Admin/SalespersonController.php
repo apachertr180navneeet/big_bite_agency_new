@@ -25,7 +25,8 @@ class SalespersonController extends Controller
      */
     public function getall(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         $query = Salesperson::query();
 
@@ -106,7 +107,8 @@ class SalespersonController extends Controller
      */
     public function store(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         /*--------------------------------------------------------------------
         | Step 1: Validate Incoming Request Data
         |--------------------------------------------------------------------

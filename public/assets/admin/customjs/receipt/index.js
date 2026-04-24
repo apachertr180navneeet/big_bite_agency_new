@@ -1,6 +1,12 @@
 $(document).ready(function () {
 
     let receiptTable = null;
+    const allowedStatusChangerIds = [1, 3, 4];
+    const currentAuthUserId = Number(window.authUserId || authUserId || 0);
+    const userCanChangeReceiptStatus =
+        typeof canChangeReceiptStatus !== "undefined"
+            ? Boolean(canChangeReceiptStatus)
+            : allowedStatusChangerIds.includes(currentAuthUserId);
 
     $.ajaxSetup({
         headers: {
@@ -113,14 +119,17 @@ $(document).ready(function () {
                     render: function (data, type, row) {
 
                         if (data === "pending") {
+                            if (userCanChangeReceiptStatus) {
+                                return `
+                                    <button class="btn btn-sm btn-success change-receipt-status"
+                                        data-id="${row.id}"
+                                        data-status="accpet">
+                                        Approve
+                                    </button>
+                                `;
+                            }
 
-                            return `
-                                <button class="btn btn-sm btn-success change-receipt-status"
-                                    data-id="${row.id}"
-                                    data-status="accpet">
-                                    Approve
-                                </button>
-                            `;
+                            return renderStatusBadge(data);
                         }
 
                         if (data === "accpet") {
@@ -432,6 +441,11 @@ $(document).ready(function () {
     */
 
     $(document).on("click", ".change-receipt-status", function () {
+
+        if (!userCanChangeReceiptStatus) {
+            toastr.error("You are not allowed to change receipt status");
+            return;
+        }
 
         const id = $(this).data("id");
         const status = $(this).data("status");

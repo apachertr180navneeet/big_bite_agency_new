@@ -18,7 +18,8 @@ class InvoiceController extends Controller
      * @return void
      */
     public function index(){
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         $salespersons = Salesperson::query()
             ->where('status', 'active')
@@ -37,7 +38,8 @@ class InvoiceController extends Controller
 
     public function getall(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         /**
          * ---------------------------------------------------------
@@ -168,7 +170,8 @@ class InvoiceController extends Controller
      */
     public function create()
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         $customers = Customer::query()
             ->where('status', 'active')
@@ -194,7 +197,8 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         $request->validate([
             'date' => 'required|date|before_or_equal:today',
             'invoice_no' => 'required|string|max:100|unique:invoices,invoice_no',
@@ -247,7 +251,8 @@ class InvoiceController extends Controller
      */
     public function edit($id)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         $invoice = Invoice::findOrFail($id);
 

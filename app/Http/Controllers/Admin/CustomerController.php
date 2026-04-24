@@ -25,7 +25,8 @@ class CustomerController extends Controller
      */
     public function getall(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         $query = Customer::query();
 
@@ -106,7 +107,8 @@ class CustomerController extends Controller
      */
     public function store(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         $request->validate([
             'firm_name' => 'required|string|max:100|unique:customers,firm_name',
             'phone' => 'required|digits_between:10,15|unique:customers,phone',

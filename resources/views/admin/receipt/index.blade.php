@@ -120,6 +120,8 @@
     const editReceiptUrl = "{{ route('admin.receipt.edit', ':id') }}";
     const changeReceiptStatusUrl = "{{ route('admin.receipt.status', ':id') }}";
     const getPendingInvoicesUrl = "{{ route('get.pending.invoices', ':id') }}";
+    const authUserId = {{ (int) Auth::id() }};
+    const canChangeReceiptStatus = {{ in_array(Auth::id(), [1, 3, 4], true) ? 'true' : 'false' }};
 </script>
 <script>
     let window.baseUrl = "{{ url('/') }}";

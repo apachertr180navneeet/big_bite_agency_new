@@ -216,7 +216,8 @@ class ReportController extends Controller
      */
     public function salespersionreport(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         try {
             $salesmanId = $request->salesman_id;
@@ -247,7 +248,8 @@ class ReportController extends Controller
      */
     private function getReportData($request)
     {
-         $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         return Invoice::select(
                 'invoices.id',
                 'invoices.invoice_no',
@@ -362,7 +364,8 @@ class ReportController extends Controller
      */
     private function getCashReportData($date)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         return DB::table('receipts')
             ->join('invoices', 'receipts.invoice_id', '=', 'invoices.id')
@@ -452,7 +455,8 @@ class ReportController extends Controller
      */
     public function firmLedgerDetailsReport(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
         try {
             $firmId = $request->firm_id;
 
@@ -496,7 +500,8 @@ class ReportController extends Controller
      */
     private function getFirmLedgerData($firmId)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->company_id;
 
         // Firm info
         $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
