@@ -12,6 +12,42 @@ use App\Models\NotificationUser;
 
 class Helper
 {
+    const SUPER_ADMIN_ID = 5;
+
+    public static function isSuperAdmin()
+    {
+        return Auth::check() && Auth::id() == self::SUPER_ADMIN_ID;
+    }
+
+    public static function getSessionCompanyId()
+    {
+        return session('filter_company_id');
+    }
+
+    public static function setSessionCompanyId($companyId)
+    {
+        session(['filter_company_id' => $companyId]);
+    }
+
+    public static function clearSessionCompanyId()
+    {
+        session()->forget('filter_company_id');
+    }
+
+    public static function applyUserScope($query, $tablePrefix = '')
+    {
+        $column = $tablePrefix ? $tablePrefix . '.user_id' : 'user_id';
+
+        if (self::isSuperAdmin()) {
+            $companyId = self::getSessionCompanyId();
+            if ($companyId) {
+                $query->where($column, $companyId);
+            }
+        } else {
+            $query->where($column, Auth::id());
+        }
+        return $query;
+    }
    
     public static function admin(){
         $admin = User::where('id',1)->first();

@@ -33,6 +33,8 @@ $(document).ready(function () {
             },
             columns: [
 
+                ...(typeof isSuperAdmin !== 'undefined' && isSuperAdmin ? [{ data: "user", searchable: false, render: data => data ? data.full_name : '-' }] : []),
+
                 { data: "invoice_no", searchable: true },
 
                 { data: "date", searchable: true },

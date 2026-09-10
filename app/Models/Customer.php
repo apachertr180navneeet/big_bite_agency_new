@@ -31,6 +31,11 @@ class Customer extends Model
         'discount' => 'decimal:2',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /**
      * Scope for active customers
      */

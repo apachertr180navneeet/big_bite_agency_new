@@ -71,6 +71,8 @@ Route::name('admin.')->prefix('admin')->group(function () {
             });
         }
 
+        Route::get('receipt/excel', [ReceiptController::class, 'exportExcel'])->name('receipt.excel');
+
         Route::get('sales-person-report', [ReportController::class, 'salespersionreport'])->name('sales.person.report');
         Route::get('cash-report', [ReportController::class, 'caashReport'])->name('cash.report');
         Route::get('firm-ledger-report', [ReportController::class, 'firmLedgerReport'])->name('firm.ledger.report');

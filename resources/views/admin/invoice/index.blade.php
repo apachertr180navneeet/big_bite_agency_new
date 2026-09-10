@@ -70,6 +70,7 @@
                         <table class="table table-bordered" id="invoiceTable">
                             <thead>
                                 <tr>
+                                    @if(\App\Helpers\Helper::isSuperAdmin())<th>Company</th>@endif
                                     <th>Invoice No</th>
                                     <th>Date</th>
                                     <th>Firm</th>
@@ -102,6 +103,7 @@
     const createInvoiceUrl = "{{ route('admin.invoice.create') }}";
     const deleteInvoiceUrl = "{{ route('admin.invoice.delete', ':id') }}";
     const editInvoiceUrl = "{{ route('admin.invoice.edit', ':id') }}";
+    const isSuperAdmin = {{ \App\Helpers\Helper::isSuperAdmin() ? 'true' : 'false' }};
 </script>
 <script src="{{asset('assets/admin/customjs/invoice/index.js')}}"></script>
 @endsection

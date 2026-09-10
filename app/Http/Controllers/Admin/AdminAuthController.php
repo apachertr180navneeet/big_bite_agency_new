@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Helpers\Helper;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Models\Invoice;
@@ -339,57 +340,86 @@ class AdminAuthController extends Controller
     // }
 
 
-    public function adminDashboard()
+    public function adminDashboard(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $companies = collect();
+        $selectedCompanyId = Helper::getSessionCompanyId();
+
+        // Handle company filter change
+        if ($request->has('company_id')) {
+            $selectedCompanyId = $request->company_id;
+            if ($selectedCompanyId) {
+                Helper::setSessionCompanyId($selectedCompanyId);
+            } else {
+                Helper::clearSessionCompanyId();
+                $selectedCompanyId = null;
+            }
+        }
+
+        // Fetch companies dropdown for super admin
+        if (Helper::isSuperAdmin()) {
+            $companies = User::where('role', 'admin')
+                ->where('id', '!=', Helper::SUPER_ADMIN_ID)
+                ->orderBy('full_name')
+                ->get(['id', 'full_name', 'email']);
+        }
 
         $acceptedReceiptTotals = Receipt::select(
                 'invoice_id',
                 DB::raw('SUM(given_amount) as total_paid')
             )
-            ->where('status', 'accpet')
-            ->where('user_id',$userId)
-            ->groupBy('invoice_id');
+            ->where('status', 'accpet');
+        Helper::applyUserScope($acceptedReceiptTotals, 'receipts');
+        $acceptedReceiptTotals = $acceptedReceiptTotals->groupBy('invoice_id');
 
         /* ------------------------------
         | Invoice Statistics
         ------------------------------*/
 
         // Total number of pending invoices
-        $pendingInvoiceCount = Invoice::where('status', 'pending')->where('user_id',$userId)->count();
+        $pendingInvoiceCountQuery = Invoice::where('status', 'pending');
+        Helper::applyUserScope($pendingInvoiceCountQuery, 'invoices');
+        $pendingInvoiceCount = $pendingInvoiceCountQuery->count();
 
         // Total remaining pending amount after accepted receipts
-        $totalPendingBillAmount = Invoice::query()
+        $totalPendingBillAmountQuery = Invoice::query()
             ->leftJoinSub($acceptedReceiptTotals, 'accepted_receipts', function ($join) {
                 $join->on('accepted_receipts.invoice_id', '=', 'invoices.id');
             })
-            ->where('invoices.status', 'pending')
-            ->where('invoices.user_id',$userId)
+            ->where('invoices.status', 'pending');
+        Helper::applyUserScope($totalPendingBillAmountQuery, 'invoices');
+        $totalPendingBillAmount = $totalPendingBillAmountQuery
             ->sum(DB::raw('GREATEST(invoices.payable_amount - COALESCE(accepted_receipts.total_paid, 0), 0)'));
 
         // Pending receipts count
-        $unapprovedReceiptCount = Receipt::where('status', 'pending')->where('user_id',$userId)->count();
+        $unapprovedReceiptCountQuery = Receipt::where('status', 'pending');
+        Helper::applyUserScope($unapprovedReceiptCountQuery, 'receipts');
+        $unapprovedReceiptCount = $unapprovedReceiptCountQuery->count();
 
         // Pending receipts total amount
-        $unapprovedReceivedAmount = Receipt::where('status', 'pending')->where('user_id',$userId)->sum('given_amount');
+        $unapprovedReceivedAmountQuery = Receipt::where('status', 'pending');
+        Helper::applyUserScope($unapprovedReceivedAmountQuery, 'receipts');
+        $unapprovedReceivedAmount = $unapprovedReceivedAmountQuery->sum('given_amount');
 
         /* ------------------------------
         | Oldest Pending Invoices
         ------------------------------*/
 
-        $pendingInvoices = Invoice::select(
+        $pendingInvoicesQuery = Invoice::select(
             'invoices.*',
             'customers.firm_name as firm_name',
             'salespersons.name as salesman_name',
+            'users.full_name as company_name',
             DB::raw('DATEDIFF(NOW(), invoices.date) as pending_days')
         )
         ->leftJoin('customers', 'customers.id', '=', 'invoices.firm_id')
         ->leftJoin('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
-        ->where('invoices.status', 'pending')
-        ->where('invoices.user_id', $userId)
-        ->orderBy('invoices.date', 'asc')
-        ->paginate(20);
+        ->leftJoin('users', 'users.id', '=', 'invoices.user_id')
+        ->where('invoices.status', 'pending');
+        Helper::applyUserScope($pendingInvoicesQuery, 'invoices');
+        $pendingInvoices = $pendingInvoicesQuery
+            ->orderBy('invoices.date', 'asc')
+            ->paginate(20);
 
         /* ------------------------------
         | Return Dashboard View
@@ -399,7 +429,9 @@ class AdminAuthController extends Controller
             'pendingInvoices',
             'pendingInvoiceCount',
             'totalPendingBillAmount',
-            'unapprovedReceivedAmount'
+            'unapprovedReceivedAmount',
+            'companies',
+            'selectedCompanyId'
         ));
     }
 

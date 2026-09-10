@@ -34,4 +34,9 @@ class Salesperson extends Authenticatable
     protected $casts = [
         'dob' => 'date',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

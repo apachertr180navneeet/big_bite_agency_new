@@ -9,44 +9,68 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Receipt;
 use App\Models\Salesperson;
+use App\Models\User;
+use App\Helpers\Helper;
+use App\Exports\ReceiptExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class ReceiptController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-        $salespersons = Salesperson::query()
-            ->where('status', 'active')
-            ->where('user_id',$userId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $salespersons = Salesperson::query()->where('status', 'active');
+        Helper::applyUserScope($salespersons, 'salespersons');
+        $salespersons = $salespersons->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.receipt.index', compact('salespersons'));
+        $customers = Customer::query()->where('status', 'active');
+        Helper::applyUserScope($customers, 'customers');
+        $customers = $customers->orderBy('firm_name')->get(['id', 'firm_name']);
+
+        $users = Helper::isSuperAdmin()
+            ? User::where('role', 'admin')->orderBy('full_name')->get(['id', 'full_name', 'email'])
+            : collect();
+
+        return view('admin.receipt.index', compact('salespersons', 'customers', 'users'));
     }
 
     public function getall(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-
         $validated = $request->validate([
+            'search' => 'nullable|string|max:100',
             'receipt_no' => 'nullable|string|max:100',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
-            'mode' => 'nullable|in:cash,upi,bank,card',
+            'mode' => 'nullable|in:cash,cd,upi,bank,card',
             'manager_status' => 'nullable|in:pending,accpet,rejected',
             'status' => 'nullable|in:pending,accpet,rejected',
             'salesperson_id' => 'nullable|exists:salespersons,id',
+            'firm_id' => 'nullable|exists:customers,id',
         ]);
 
         $query = Receipt::query()->with([
             'firm:id,firm_name',
             'invoice:id,invoice_no',
+            'user:id,full_name,email',
         ]);
 
-        $query->where('user_id',$userId);
+        Helper::applyUserScope($query, 'receipts');
+
+        if (!empty($validated['search'])) {
+            $search = $validated['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('receipt_no', 'like', '%' . $search . '%')
+                  ->orWhere('amount', 'like', '%' . $search . '%')
+                  ->orWhere('given_amount', 'like', '%' . $search . '%')
+                  ->orWhereHas('invoice', function ($inv) use ($search) {
+                      $inv->where('invoice_no', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('firm', function ($f) use ($search) {
+                      $f->where('firm_name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
 
         if (!empty($validated['receipt_no'])) {
             $query->where('receipt_no', 'like', '%' . $validated['receipt_no'] . '%');
@@ -68,13 +92,19 @@ class ReceiptController extends Controller
             $query->where('status', $validated['status']);
         }
 
+        if (!empty($validated['firm_id'])) {
+            $query->where('firm_id', $validated['firm_id']);
+        }
+
         if (!empty($validated['salesperson_id'])) {
             $query->whereHas('invoice', function ($invoiceQuery) use ($validated) {
                 $invoiceQuery->where('salesperson_id', $validated['salesperson_id']);
             });
         }
 
-        $totalRecords = Receipt::count();
+        $totalQuery = Receipt::query();
+        Helper::applyUserScope($totalQuery, 'receipts');
+        $totalRecords = $totalQuery->count();
         $filteredRecords = $query->count();
 
         $start = (int) $request->input('start', 0);
@@ -104,14 +134,90 @@ class ReceiptController extends Controller
         ]);
     }
 
+    public function exportExcel(Request $request)
+    {
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:100',
+            'receipt_no' => 'nullable|string|max:100',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'mode' => 'nullable|in:cash,cd,upi,bank,card',
+            'status' => 'nullable|in:pending,accpet,rejected',
+            'salesperson_id' => 'nullable|exists:salespersons,id',
+            'firm_id' => 'nullable|exists:customers,id',
+        ]);
+
+        $query = Receipt::query()->with([
+            'firm:id,firm_name',
+            'invoice:id,invoice_no',
+        ]);
+
+        Helper::applyUserScope($query, 'receipts');
+
+        if (!empty($validated['search'])) {
+            $search = $validated['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('receipt_no', 'like', '%' . $search . '%')
+                  ->orWhere('amount', 'like', '%' . $search . '%')
+                  ->orWhere('given_amount', 'like', '%' . $search . '%')
+                  ->orWhereHas('invoice', function ($inv) use ($search) {
+                      $inv->where('invoice_no', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('firm', function ($f) use ($search) {
+                      $f->where('firm_name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
+        if (!empty($validated['receipt_no'])) {
+            $query->where('receipt_no', 'like', '%' . $validated['receipt_no'] . '%');
+        }
+
+        if (!empty($validated['date_from'])) {
+            $query->whereDate('date', '>=', $validated['date_from']);
+        }
+
+        if (!empty($validated['date_to'])) {
+            $query->whereDate('date', '<=', $validated['date_to']);
+        }
+
+        if (!empty($validated['mode'])) {
+            $query->where('mode', $validated['mode']);
+        }
+
+        if (!empty($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
+
+        if (!empty($validated['firm_id'])) {
+            $query->where('firm_id', $validated['firm_id']);
+        }
+
+        if (!empty($validated['salesperson_id'])) {
+            $query->whereHas('invoice', function ($invoiceQuery) use ($validated) {
+                $invoiceQuery->where('salesperson_id', $validated['salesperson_id']);
+            });
+        }
+
+        $receipts = $query->orderBy('id', 'desc')->get();
+
+        $receipts = $receipts->map(function ($item) {
+            $item->firm_name = optional($item->firm)->firm_name;
+            $item->invoice_no = optional($item->invoice)->invoice_no;
+            $item->date = $item->date
+                ? \Carbon\Carbon::parse($item->date)->format('d/m/Y')
+                : null;
+            return $item;
+        });
+
+        return Excel::download(new ReceiptExport($receipts), 'receipts.xlsx');
+    }
+
     public function create()
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-        $customers = Customer::where('status', 'active')
-            ->where('user_id',$userId)
-            ->orderBy('firm_name')
-            ->get(['id', 'firm_name']);
+        $customers = Customer::where('status', 'active');
+        Helper::applyUserScope($customers, 'customers');
+        $customers = $customers->orderBy('firm_name')->get(['id', 'firm_name']);
 
         $generatedReceiptNo = $this->generateReceiptNo();
 
@@ -120,8 +226,7 @@ class ReceiptController extends Controller
 
     public function store(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $userId = Auth::id();
         
         $request->validate([
             'date' => 'required|date',
@@ -178,18 +283,15 @@ class ReceiptController extends Controller
 
     public function edit($id)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
         $receipt = Receipt::findOrFail($id);
 
-        $customers = Customer::where('status', 'active')
-            ->where('user_id',$userId)
-            ->orderBy('firm_name')
-            ->get(['id', 'firm_name']);
+        $customers = Customer::where('status', 'active');
+        Helper::applyUserScope($customers, 'customers');
+        $customers = $customers->orderBy('firm_name')->get(['id', 'firm_name']);
 
-        $invoices = Invoice::with('salesperson:id,name')
-            ->where('user_id',$userId)
-            ->withSum('receipts as paid_amount', 'given_amount')
+        $invoices = Invoice::with('salesperson:id,name');
+        Helper::applyUserScope($invoices, 'invoices');
+        $invoices = $invoices->withSum('receipts as paid_amount', 'given_amount')
             ->orderBy('invoice_no')
             ->get(['id', 'firm_id', 'invoice_no', 'amount', 'status', 'salesperson_id','remark']);
 
@@ -338,14 +440,23 @@ class ReceiptController extends Controller
 
     public function changeStatus(Request $request, $id)
     {
+        if (!Helper::isSuperAdmin()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Only super admin can approve/reject receipts'
+            ], 403);
+        }
+
         $request->validate([
             'status' => 'required|in:pending,accpet,rejected',
+            'approval_remark' => 'nullable|string|max:500',
         ]);
 
         $receipt = Receipt::findOrFail($id);
 
         $receipt->status = $request->status;
         $receipt->manager_status = $request->status;
+        $receipt->approval_remark = $request->approval_remark;
         $receipt->save();
 
         /*

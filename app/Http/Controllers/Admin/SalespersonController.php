@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Salesperson;
+use App\Models\User;
+use App\Helpers\Helper;
 use Illuminate\Support\Facades\Auth;
 
 class SalespersonController extends Controller
@@ -15,7 +17,10 @@ class SalespersonController extends Controller
      * @return void
      */
     public function index(){
-        return view("admin.salesperson.index");
+        $users = Helper::isSuperAdmin()
+            ? User::where('role', 'admin')->orderBy('full_name')->get(['id', 'full_name', 'email'])
+            : collect();
+        return view("admin.salesperson.index", compact('users'));
     }
 
     /**
@@ -25,12 +30,9 @@ class SalespersonController extends Controller
      */
     public function getall(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $query = Salesperson::query()->with('user:id,full_name,email');
 
-        $query = Salesperson::query();
-
-        $query->where('user_id',$userId);
+        Helper::applyUserScope($query, 'salespersons');
 
         /**
          * ---------------------------------------------------------
@@ -53,7 +55,9 @@ class SalespersonController extends Controller
          * Total Records Count (Before Filtering)
          * ---------------------------------------------------------
          */
-        $totalRecords = Salesperson::count();
+        $totalQuery = Salesperson::query();
+        Helper::applyUserScope($totalQuery, 'salespersons');
+        $totalRecords = $totalQuery->count();
 
         /**
          * ---------------------------------------------------------
@@ -107,8 +111,7 @@ class SalespersonController extends Controller
      */
     public function store(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $userId = Auth::id();
         /*--------------------------------------------------------------------
         | Step 1: Validate Incoming Request Data
         |--------------------------------------------------------------------

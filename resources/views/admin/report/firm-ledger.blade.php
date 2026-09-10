@@ -72,6 +72,7 @@
                 <table class="table table-bordered">
                     <thead>
                         <tr>
+                            @if(\App\Helpers\Helper::isSuperAdmin())<th>Company</th>@endif
                             <th>Firm Name</th>
                             <th>Total Debit</th>
                             <th>Total Credit</th>
@@ -81,6 +82,7 @@
                     <tbody>
                         @forelse($reports as $report)
                             <tr>
+                                @if(\App\Helpers\Helper::isSuperAdmin())<td>{{ $report->company_name ?? '-' }}</td>@endif
                                 <td>{{ $report->firm_name }}</td>
                                 <td>{{ number_format($report->total_debit, 2) }}</td>
                                 <td>{{ number_format($report->total_credit, 2) }}</td>
@@ -88,12 +90,13 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center">No Data Found</td>
+                                <td colspan="5" class="text-center">No Data Found</td>
                             </tr>
                         @endforelse
                     </tbody>
                     <tfoot>
                         <tr>
+                            @if(\App\Helpers\Helper::isSuperAdmin())<th></th>@endif
                             <th class="text-end">Total</th>
                             <th>{{ number_format($totalDebit, 2) }}</th>
                             <th>{{ number_format($totalCredit, 2) }}</th>

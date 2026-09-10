@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\Customer;
 use App\Models\Salesperson;
+use App\Models\User;
+use App\Helpers\Helper;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -18,16 +20,14 @@ class InvoiceController extends Controller
      * @return void
      */
     public function index(){
-        $user = Auth::user();
-        $userId = $user->company_id;
+        Helper::applyUserScope($salespersonQuery = Salesperson::query()->where('status', 'active'), 'salespersons');
+        $salespersons = $salespersonQuery->orderBy('name')->get(['id', 'name']);
 
-        $salespersons = Salesperson::query()
-            ->where('status', 'active')
-            ->where('user_id', $userId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $users = Helper::isSuperAdmin()
+            ? User::where('role', 'admin')->orderBy('full_name')->get(['id', 'full_name', 'email'])
+            : collect();
 
-        return view("admin.invoice.index", compact('salespersons'));
+        return view("admin.invoice.index", compact('salespersons', 'users'));
     }
 
     /**
@@ -38,9 +38,6 @@ class InvoiceController extends Controller
 
     public function getall(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-
         /**
          * ---------------------------------------------------------
          * Base Query
@@ -48,15 +45,20 @@ class InvoiceController extends Controller
          */
         $query = Invoice::query()->with([
             'firm:id,firm_name',
-            'salesperson:id,name'
-        ])->where('user_id', $userId);
+            'salesperson:id,name',
+            'user:id,full_name,email'
+        ]);
+
+        Helper::applyUserScope($query, 'invoices');
 
         /**
          * ---------------------------------------------------------
          * Total Records (Before Filter)
          * ---------------------------------------------------------
          */
-        $totalRecords = Invoice::where('user_id', $userId)->count();
+        $totalQuery = Invoice::query();
+        Helper::applyUserScope($totalQuery, 'invoices');
+        $totalRecords = $totalQuery->count();
 
         /**
          * ---------------------------------------------------------
@@ -144,6 +146,7 @@ class InvoiceController extends Controller
 
                 'firm_name' => optional($item->firm)->firm_name,
                 'salesperson_name' => optional($item->salesperson)->name,
+                'user' => $item->user ? $item->user->only(['id', 'full_name', 'email']) : null,
 
                 'amount' => $item->amount,
                 'discount_percent' => $item->discount_percent,
@@ -170,20 +173,13 @@ class InvoiceController extends Controller
      */
     public function create()
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $customers = Customer::query()->where('status', 'active');
+        Helper::applyUserScope($customers, 'customers');
+        $customers = $customers->orderBy('firm_name')->get(['id', 'firm_name']);
 
-        $customers = Customer::query()
-            ->where('status', 'active')
-            ->where('user_id',$userId)
-            ->orderBy('firm_name')
-            ->get(['id', 'firm_name']);
-
-        $salespersons = Salesperson::query()
-            ->where('status', 'active')
-            ->where('user_id',$userId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $salespersons = Salesperson::query()->where('status', 'active');
+        Helper::applyUserScope($salespersons, 'salespersons');
+        $salespersons = $salespersons->orderBy('name')->get(['id', 'name']);
 
         return view("admin.invoice.create", compact('customers', 'salespersons'));
     }
@@ -197,8 +193,7 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $userId = Auth::id();
         $request->validate([
             'date' => 'required|date|before_or_equal:today',
             'invoice_no' => 'required|string|max:100|unique:invoices,invoice_no',
@@ -251,22 +246,15 @@ class InvoiceController extends Controller
      */
     public function edit($id)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-
         $invoice = Invoice::findOrFail($id);
 
-        $customers = Customer::query()
-            ->where('status', 'active')
-            ->where('user_id',$userId)
-            ->orderBy('firm_name')
-            ->get(['id', 'firm_name']);
+        $customers = Customer::query()->where('status', 'active');
+        Helper::applyUserScope($customers, 'customers');
+        $customers = $customers->orderBy('firm_name')->get(['id', 'firm_name']);
 
-        $salespersons = Salesperson::query()
-            ->where('status', 'active')
-            ->where('user_id',$userId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $salespersons = Salesperson::query()->where('status', 'active');
+        Helper::applyUserScope($salespersons, 'salespersons');
+        $salespersons = $salespersons->orderBy('name')->get(['id', 'name']);
 
         return view("admin.invoice.edit", compact('invoice', 'customers', 'salespersons'));
     }

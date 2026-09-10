@@ -193,6 +193,7 @@
                                 <select name="mode" class="form-select">
 
                                     <option value="cash" {{ $receipt->mode == 'cash' ? 'selected':'' }}>Cash</option>
+                                    <option value="cd" {{ $receipt->mode == 'cd' ? 'selected':'' }}>CD/DSC</option>
                                     <option value="upi" {{ $receipt->mode == 'upi' ? 'selected':'' }}>UPI</option>
                                     <option value="bank" {{ $receipt->mode === 'bank' ? 'selected' : '' }}>RTGS / NEFT</option>
                                     <option value="card" {{ $receipt->mode === 'card' ? 'selected' : '' }}>Cheque</option>

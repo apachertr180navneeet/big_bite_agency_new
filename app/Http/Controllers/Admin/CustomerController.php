@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Customer;
+use App\Models\User;
+use App\Helpers\Helper;
 use Illuminate\Support\Facades\Auth;
 
 class CustomerController extends Controller
@@ -15,7 +17,10 @@ class CustomerController extends Controller
      * @return void
      */
     public function index(){
-       return view("admin.customer.index");
+       $users = Helper::isSuperAdmin()
+            ? User::where('role', 'admin')->orderBy('full_name')->get(['id', 'full_name', 'email'])
+            : collect();
+        return view("admin.customer.index", compact('users'));
     }
 
     /**
@@ -25,13 +30,9 @@ class CustomerController extends Controller
      */
     public function getall(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $query = Customer::query()->with('user:id,full_name,email');
 
-        $query = Customer::query();
-
-
-        $query->where('user_id',$userId);
+        Helper::applyUserScope($query, 'customers');
 
 
         /**
@@ -53,7 +54,9 @@ class CustomerController extends Controller
          * Total Records Count (Before Filtering)
          * ---------------------------------------------------------
          */
-        $totalRecords = Customer::count();
+        $totalQuery = Customer::query();
+        Helper::applyUserScope($totalQuery, 'customers');
+        $totalRecords = $totalQuery->count();
 
         /**
          * ---------------------------------------------------------
@@ -107,8 +110,7 @@ class CustomerController extends Controller
      */
     public function store(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
+        $userId = Auth::id();
         $request->validate([
             'firm_name' => 'required|string|max:100|unique:customers,firm_name',
             'phone' => 'required|digits_between:10,15|unique:customers,phone',

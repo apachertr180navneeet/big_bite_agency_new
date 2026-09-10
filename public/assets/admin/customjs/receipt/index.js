@@ -1,12 +1,6 @@
 $(document).ready(function () {
 
     let receiptTable = null;
-    const allowedStatusChangerIds = [1, 3, 4];
-    const currentAuthUserId = Number(window.authUserId || authUserId || 0);
-    const userCanChangeReceiptStatus =
-        typeof canChangeReceiptStatus !== "undefined"
-            ? Boolean(canChangeReceiptStatus)
-            : allowedStatusChangerIds.includes(currentAuthUserId);
 
     $.ajaxSetup({
         headers: {
@@ -53,10 +47,12 @@ $(document).ready(function () {
                 type: "GET",
                 data: function (d) {
 
+                    d.search = $("#global_search").val();
                     d.receipt_no = $("#filter_receipt_no").val();
                     d.date_from = $("#filter_date_from").val();
                     d.date_to = $("#filter_date_to").val();
                     d.mode = $("#filter_mode").val();
+                    d.firm_id = $("#filter_firm_id").val();
                     d.salesperson_id = $("#filter_salesperson_id").val();
                     d.manager_status = $("#filter_manager_status").val();
                     d.status = $("#filter_status").val();
@@ -65,6 +61,8 @@ $(document).ready(function () {
             },
 
             columns: [
+
+                ...(typeof isSuperAdmin !== 'undefined' && isSuperAdmin ? [{ data: "user", searchable: false, render: data => data ? data.full_name : '-' }] : []),
 
                 { data: "date" },
                 { data: "invoice_no", defaultContent: "-" },
@@ -77,11 +75,6 @@ $(document).ready(function () {
                 {
                     data: "given_amount",
                     render: data => Number(data || 0).toFixed(2)
-                },
-
-                {
-                    data: "sales_person",
-                    defaultContent: "-"
                 },
 
                 {
@@ -105,6 +98,10 @@ $(document).ready(function () {
                             return "Cheque";
                         }
 
+                        if (mode === "cd") {
+                            return "CD/DSC";
+                        }
+
                         return data.toUpperCase();
                     }
                 },
@@ -118,8 +115,10 @@ $(document).ready(function () {
                     data: "status",
                     render: function (data, type, row) {
 
+                        var canApprove = typeof isSuperAdmin !== 'undefined' && isSuperAdmin;
+
                         if (data === "pending") {
-                            if (userCanChangeReceiptStatus) {
+                            if (canApprove) {
                                 return `
                                     <button class="btn btn-sm btn-success change-receipt-status"
                                         data-id="${row.id}"
@@ -128,12 +127,12 @@ $(document).ready(function () {
                                     </button>
                                 `;
                             }
-
-                            return renderStatusBadge(data);
+                            return '<span class="badge bg-label-warning">Pending</span>';
                         }
 
                         if (data === "accpet") {
-                            return '<span class="badge bg-label-success">Approved</span>';
+                            var remarkHtml = row.approval_remark ? '<br><small class="text-muted">Tally: ' + row.approval_remark + '</small>' : '';
+                            return '<span class="badge bg-label-success">Approved' + remarkHtml + '</span>';
                         }
 
                         if (data === "rejected") {
@@ -185,9 +184,11 @@ $(document).ready(function () {
 
     $("#resetReceiptFilters").on("click", function () {
 
+        $("#global_search").val("");
         $("#filter_receipt_no").val("");
         $("#filter_date_from").val("");
         $("#filter_date_to").val("");
+        $("#filter_firm_id").val("");
         $("#filter_salesperson_id").val("");
         $("#filter_mode").val("");
         $("#filter_manager_status").val("");
@@ -196,7 +197,7 @@ $(document).ready(function () {
         reloadReceiptTable(true);
     });
 
-    $("#filter_receipt_no, #filter_date_from, #filter_date_to").on("keypress", function (e) {
+    $("#global_search, #filter_receipt_no, #filter_date_from, #filter_date_to").on("keypress", function (e) {
 
         if (e.which === 13) {
             reloadReceiptTable(true);
@@ -204,8 +205,32 @@ $(document).ready(function () {
 
     });
 
-    $("#filter_salesperson_id, #filter_mode, #filter_manager_status, #filter_status").on("change", function () {
+    $("#filter_firm_id, #filter_salesperson_id, #filter_mode, #filter_manager_status, #filter_status").on("change", function () {
         reloadReceiptTable(true);
+    });
+
+    /*
+    =========================
+    EXPORT EXCEL
+    =========================
+    */
+
+    $(document).on("click", "#exportExcelBtn", function () {
+        const params = new URLSearchParams();
+
+        const fields = [
+            "search", "receipt_no", "date_from", "date_to",
+            "firm_id", "salesperson_id", "mode", "status"
+        ];
+
+        fields.forEach(function (field) {
+            const val = $("#filter_" + field).val();
+            if (val) {
+                params.set(field, val);
+            }
+        });
+
+        window.open(exportReceiptExcelUrl + "?" + params.toString(), "_blank");
     });
 
     /*
@@ -442,48 +467,45 @@ $(document).ready(function () {
 
     $(document).on("click", ".change-receipt-status", function () {
 
-        if (!userCanChangeReceiptStatus) {
-            toastr.error("You are not allowed to change receipt status");
-            return;
-        }
-
         const id = $(this).data("id");
         const status = $(this).data("status");
 
-        Swal.fire({
-            title: "Are you sure?",
-            text: "You want to change receipt status?",
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "Yes, continue"
-        }).then((result) => {
+        $("#approval_receipt_id").val(id);
+        $("#approval_status").val(status);
+        $("#approval_remark").val("");
+        $("#approvalRemarkModal").modal("show");
 
-            if (!result.isConfirmed) return;
+    });
 
-            $.ajax({
+    $("#confirmApprovalBtn").on("click", function () {
 
-                url: changeReceiptStatusUrl.replace(":id", id),
-                type: "POST",
+        const id = $("#approval_receipt_id").val();
+        const status = $("#approval_status").val();
+        const approval_remark = $("#approval_remark").val();
 
-                data: {
-                    status: status
-                },
+        $.ajax({
 
-                success: function (response) {
+            url: changeReceiptStatusUrl.replace(":id", id),
+            type: "POST",
 
-                    toastr.success(response.message || "Status updated");
+            data: {
+                status: status,
+                approval_remark: approval_remark
+            },
 
-                    receiptTable.ajax.reload(null, false);
+            success: function (response) {
 
-                },
+                toastr.success(response.message || "Status updated");
+                $("#approvalRemarkModal").modal("hide");
+                receiptTable.ajax.reload(null, false);
 
-                error: function () {
+            },
 
-                    toastr.error("Something went wrong");
+            error: function () {
 
-                }
+                toastr.error("Something went wrong");
 
-            });
+            }
 
         });
 
@@ -518,8 +540,8 @@ $(document).ready(function () {
 
                         $.each(data, function (index, invoice) {
 
-                            let paid = invoice.paid_amount ?? 0;
-                            let payable = invoice.payable_amount ?? 0;
+                            let paid = invoice.paid_amount || 0;
+                            let payable = invoice.payable_amount || 0;
 
                             let remaining = payable - paid;
 

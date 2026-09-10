@@ -47,10 +47,12 @@
 
                     <thead>
                         <tr>
+                            @if(\App\Helpers\Helper::isSuperAdmin())<th>Company</th>@endif
                             <th>Receipt No</th>
                             <th>Firm Name</th>
                             <th>Sales Person</th>
                             <th>Cash</th>
+                            <th>CD/DSC</th>
                             <th>Cheque</th>
                             <th>UPI</th>
                             <th>RTGS</th>
@@ -61,11 +63,13 @@
                         @forelse($reports as $report)
 
                         <tr>
+                            @if(\App\Helpers\Helper::isSuperAdmin())<td>{{ $report->company_name ?? '-' }}</td>@endif
                             <td>{{ $report->receipt_no }}</td>
                             <td>{{ $report->firm_name }}</td>
                             <td>{{ $report->salesman_name }}</td>
 
                             <td>{{ number_format($report->cash_total ?? 0,2) }}</td>
+                            <td>{{ number_format($report->cd_total ?? 0,2) }}</td>
                             <td>{{ number_format($report->cheque_total ?? 0,2) }}</td>
                             <td>{{ number_format($report->upi_total ?? 0,2) }}</td>
                             <td>{{ number_format($report->rtgs_total ?? 0,2) }}</td>
@@ -73,15 +77,17 @@
 
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center">No Data Found</td>
+                            <td colspan="9" class="text-center">No Data Found</td>
                         </tr>
                         @endforelse
                     </tbody>
 
                     <tfoot>
                         <tr>
-                            <th colspan="3" class="text-end">Total</th>
+                            @if(\App\Helpers\Helper::isSuperAdmin())<th></th>@endif
+                            <th colspan="4" class="text-end">Total</th>
                             <th>{{ number_format($reports->sum('cash_total'),2) }}</th>
+                            <th>{{ number_format($reports->sum('cd_total'),2) }}</th>
                             <th>{{ number_format($reports->sum('cheque_total'),2) }}</th>
                             <th>{{ number_format($reports->sum('upi_total'),2) }}</th>
                             <th>{{ number_format($reports->sum('rtgs_total'),2) }}</th>

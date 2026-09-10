@@ -114,9 +114,10 @@
                                 <select name="mode" class="form-select">
                                     <option value="">Select Mode</option>
                                     <option value="cash" {{ old('mode') === 'cash' ? 'selected' : '' }}>Cash</option>
+                                    <option value="cd" {{ old('mode') === 'cd' ? 'selected' : '' }}>CD/DSC</option>
                                     <option value="upi" {{ old('mode') === 'upi' ? 'selected' : '' }}>UPI</option>
-                                    <option value="bank" {{ old('mode') === 'rtgs' ? 'selected' : '' }}>RTGS / NEFT</option>
-                                    <option value="card" {{ old('mode') === 'chq' ? 'selected' : '' }}>chaque</option>
+                                    <option value="bank" {{ old('mode') === 'bank' ? 'selected' : '' }}>RTGS / NEFT</option>
+                                    <option value="card" {{ old('mode') === 'card' ? 'selected' : '' }}>Cheque</option>
                                 </select>
                             </div>
 

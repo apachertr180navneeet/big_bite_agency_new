@@ -7,6 +7,7 @@
             <th>Firm Name</th>
             <th>Sales Person</th>
             <th>Cash</th>
+            <th>CD/DSC</th>
             <th>Cheque</th>
             <th>UPI</th>
             <th>RTGS</th>
@@ -20,6 +21,7 @@
             <td>{{ $report->firm_name }}</td>
             <td>{{ $report->salesman_name }}</td>
             <td>{{ number_format($report->cash_total,2) }}</td>
+            <td>{{ number_format($report->cd_total,2) }}</td>
             <td>{{ number_format($report->cheque_total,2) }}</td>
             <td>{{ number_format($report->upi_total,2) }}</td>
             <td>{{ number_format($report->rtgs_total,2) }}</td>
@@ -32,6 +34,7 @@
         <tr>
             <th colspan="3">Total</th>
             <th>{{ number_format($reports->sum('cash_total'),2) }}</th>
+            <th>{{ number_format($reports->sum('cd_total'),2) }}</th>
             <th>{{ number_format($reports->sum('cheque_total'),2) }}</th>
             <th>{{ number_format($reports->sum('upi_total'),2) }}</th>
             <th>{{ number_format($reports->sum('rtgs_total'),2) }}</th>

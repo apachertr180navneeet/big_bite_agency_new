@@ -106,6 +106,7 @@
                                 <select name="mode" class="form-select" required>
                                     <option value="">Select Mode</option>
                                     <option value="cash" {{ old('mode') === 'cash' ? 'selected' : '' }}>Cash</option>
+                                    <option value="cd" {{ old('mode') === 'cd' ? 'selected' : '' }}>CD/DSC</option>
                                     <option value="upi" {{ old('mode') === 'upi' ? 'selected' : '' }}>UPI</option>
                                     <option value="bank" {{ old('mode') === 'bank' ? 'selected' : '' }}>RTGS / NEFT</option>
                                     <option value="card" {{ old('mode') === 'card' ? 'selected' : '' }}>Cheque</option>
@@ -213,8 +214,8 @@
                     }
 
                     $.each(data, function (index, invoice) {
-                        let paid = invoice.paid_amount ?? 0;
-                        let payable = invoice.payable_amount ?? 0;
+                        let paid = invoice.paid_amount || 0;
+                        let payable = invoice.payable_amount || 0;
                         let remaining = payable - paid;
 
                         invoiceDropdown.append(`

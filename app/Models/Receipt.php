@@ -18,13 +18,13 @@ class Receipt extends Model
         'invoice_id',
         'amount',
         'given_amount',
-        'discount',
         'final_amount',
         'sales_person',
         'mode',
         'manager_status',
         'status',
         'remark',
+        'approval_remark',
         'user_id',
     ];
 
@@ -36,6 +36,11 @@ class Receipt extends Model
     public function invoice()
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
 

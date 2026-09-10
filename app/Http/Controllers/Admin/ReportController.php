@@ -20,6 +20,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 // Helpers
 use Carbon\Carbon;
+use App\Helpers\Helper;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -39,9 +41,9 @@ class ReportController extends Controller
             $firmId = $request->firm_id;
 
             // Fetch active firms for dropdown
-            $firms = Customer::where('status', 'active')
-                ->orderBy('firm_name')
-                ->get(['id', 'firm_name']);
+            $firmsQuery = Customer::where('status', 'active');
+            Helper::applyUserScope($firmsQuery, 'customers');
+            $firms = $firmsQuery->orderBy('firm_name')->get(['id', 'firm_name']);
 
             /**
              * Subquery: Total Debit (Invoices)
@@ -49,8 +51,9 @@ class ReportController extends Controller
             $invoiceTotals = Invoice::select(
                     'firm_id',
                     DB::raw('SUM(COALESCE(payable_amount, amount)) as total_debit')
-                )
-                ->groupBy('firm_id');
+                );
+            Helper::applyUserScope($invoiceTotals, 'invoices');
+            $invoiceTotals = $invoiceTotals->groupBy('firm_id');
 
             /**
              * Subquery: Total Credit (Receipts)
@@ -59,8 +62,9 @@ class ReportController extends Controller
                     'firm_id',
                     DB::raw('SUM(given_amount) as total_credit')
                 )
-                ->where('status', 'accpet')
-                ->groupBy('firm_id');
+                ->where('status', 'accpet');
+            Helper::applyUserScope($receiptTotals, 'receipts');
+            $receiptTotals = $receiptTotals->groupBy('firm_id');
 
             /**
              * Main Query:
@@ -70,6 +74,7 @@ class ReportController extends Controller
                 ->select(
                     'customers.id',
                     'customers.firm_name',
+                    'users.full_name as company_name',
 
                     // Debit & Credit
                     DB::raw('COALESCE(invoice_totals.total_debit, 0) as total_debit'),
@@ -78,6 +83,7 @@ class ReportController extends Controller
                     // Balance Calculation
                     DB::raw('COALESCE(invoice_totals.total_debit, 0) - COALESCE(receipt_totals.total_credit, 0) as balance')
                 )
+                ->leftJoin('users', 'users.id', '=', 'customers.user_id')
                 ->leftJoinSub($invoiceTotals, 'invoice_totals', function ($join) {
                     $join->on('invoice_totals.firm_id', '=', 'customers.id');
                 })
@@ -88,10 +94,11 @@ class ReportController extends Controller
                 // Apply filter if firm selected
                 ->when($firmId, function ($query) use ($firmId) {
                     $query->where('customers.id', $firmId);
-                })
+                });
 
-                ->orderBy('customers.firm_name')
-                ->get();
+            Helper::applyUserScope($reports, 'customers');
+
+            $reports = $reports->orderBy('customers.firm_name')->get();
 
             // Calculate totals
             return view('admin.report.firm-ledger', [
@@ -216,14 +223,13 @@ class ReportController extends Controller
      */
     public function salespersionreport(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-
         try {
             $salesmanId = $request->salesman_id;
 
             // Fetch salespersons
-            $salesmen = Salesperson::where('status', 'active')->where('user_id',$userId)->get();
+            $salesmenQuery = Salesperson::where('status', 'active');
+            Helper::applyUserScope($salesmenQuery, 'salespersons');
+            $salesmen = $salesmenQuery->get();
 
             // Get report data (reusable method)
             $reports = $this->getReportData($request);
@@ -248,15 +254,15 @@ class ReportController extends Controller
      */
     private function getReportData($request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-        return Invoice::select(
+        $query = Invoice::select(
                 'invoices.id',
                 'invoices.invoice_no',
                 'invoices.date',
+                'invoices.user_id',
                 'customers.firm_name',
                 'salespersons.name as salesman_name',
                 'invoices.payable_amount',
+                'users.full_name as company_name',
 
                 // Received amount
                 DB::raw('COALESCE(SUM(receipts.given_amount),0) as received_amount'),
@@ -266,19 +272,22 @@ class ReportController extends Controller
             )
             ->join('customers', 'customers.id', '=', 'invoices.firm_id')
             ->join('salespersons', 'salespersons.id', '=', 'invoices.salesperson_id')
+            ->leftJoin('users', 'users.id', '=', 'invoices.user_id')
             ->leftJoin('receipts', function ($join) {
                 $join->on('receipts.invoice_id', '=', 'invoices.id')
                      ->whereNull('receipts.deleted_at');
             })
-            ->where('invoices.status', 'pending')
-            ->where('invoices.user_id',$userId)
-            ->groupBy(
+            ->where('invoices.status', 'pending');
+        Helper::applyUserScope($query, 'invoices');
+        return $query->groupBy(
                 'invoices.id',
                 'invoices.invoice_no',
                 'invoices.date',
+                'invoices.user_id',
                 'customers.firm_name',
                 'salespersons.name',
-                'invoices.payable_amount'
+                'invoices.payable_amount',
+                'users.full_name'
             )
             ->when($request->salesman_id, function ($q) use ($request) {
                 $q->where('invoices.salesperson_id', $request->salesman_id);
@@ -364,30 +373,35 @@ class ReportController extends Controller
      */
     private function getCashReportData($date)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-
-        return DB::table('receipts')
+        $query = DB::table('receipts')
             ->join('invoices', 'receipts.invoice_id', '=', 'invoices.id')
             ->join('customers', 'invoices.firm_id', '=', 'customers.id')
             ->join('salespersons', 'invoices.salesperson_id', '=', 'salespersons.id')
+            ->leftJoin('users', 'receipts.user_id', '=', 'users.id')
             ->select(
                 'receipts.receipt_no',
                 'customers.firm_name',
                 'salespersons.name as salesman_name',
+                'users.full_name as company_name',
 
                 // Mode-wise totals
                 DB::raw("SUM(CASE WHEN receipts.mode='cash' THEN receipts.given_amount ELSE 0 END) as cash_total"),
+                DB::raw("SUM(CASE WHEN receipts.mode='cd' THEN receipts.given_amount ELSE 0 END) as cd_total"),
                 DB::raw("SUM(CASE WHEN receipts.mode='card' THEN receipts.given_amount ELSE 0 END) as cheque_total"),
                 DB::raw("SUM(CASE WHEN receipts.mode='upi' THEN receipts.given_amount ELSE 0 END) as upi_total"),
                 DB::raw("SUM(CASE WHEN receipts.mode='bank' THEN receipts.given_amount ELSE 0 END) as rtgs_total")
             )
-            ->whereDate('receipts.date', $date)
-            ->where('receipts.user_id',$userId)
-            ->groupBy(
+            ->whereDate('receipts.date', $date);
+
+        if (!Helper::isSuperAdmin()) {
+            $query->where('receipts.user_id', Auth::id());
+        }
+
+        return $query->groupBy(
                 'receipts.receipt_no',
                 'customers.firm_name',
-                'salespersons.name'
+                'salespersons.name',
+                'users.full_name'
             )
             ->get();
     }
@@ -455,16 +469,13 @@ class ReportController extends Controller
      */
     public function firmLedgerDetailsReport(Request $request)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
         try {
             $firmId = $request->firm_id;
 
             // Get all firms
-            $firms = Customer::where('status', 'active')
-                ->where('user_id',$userId)
-                ->orderBy('firm_name')
-                ->get(['id', 'firm_name']);
+            $firmsQuery = Customer::where('status', 'active');
+            Helper::applyUserScope($firmsQuery, 'customers');
+            $firms = $firmsQuery->orderBy('firm_name')->get(['id', 'firm_name']);
 
             // Default values
             $data = [
@@ -500,14 +511,11 @@ class ReportController extends Controller
      */
     private function getFirmLedgerData($firmId)
     {
-        $user = Auth::user();
-        $userId = $user->company_id;
-
         // Firm info
         $selectedFirm = Customer::find($firmId, ['id', 'firm_name', 'phone']);
 
         // Invoice (Debit)
-        $invoiceEntries = Invoice::select(
+        $invoiceEntriesQuery = Invoice::select(
                 'id',
                 'date',
                 'invoice_no as reference_no',
@@ -517,12 +525,12 @@ class ReportController extends Controller
                 DB::raw('COALESCE(discount_amount, 0) as discount'),
                 DB::raw('NULL as remark')
             )
-            ->where('firm_id', $firmId)
-            ->where('user_id',$userId)
-            ->get();
+            ->where('firm_id', $firmId);
+        Helper::applyUserScope($invoiceEntriesQuery, 'invoices');
+        $invoiceEntries = $invoiceEntriesQuery->get();
 
         // Receipt (Credit)
-        $receiptEntries = Receipt::select(
+        $receiptEntriesQuery = Receipt::select(
                 'id',
                 'date',
                 'receipt_no as reference_no',
@@ -533,9 +541,9 @@ class ReportController extends Controller
                 'remark'
             )
             ->where('firm_id', $firmId)
-            ->where('status', 'accpet')
-            ->where('user_id',$userId)
-            ->get();
+            ->where('status', 'accpet');
+        Helper::applyUserScope($receiptEntriesQuery, 'receipts');
+        $receiptEntries = $receiptEntriesQuery->get();
 
         // Merge + Sort
         $ledgerEntries = $invoiceEntries

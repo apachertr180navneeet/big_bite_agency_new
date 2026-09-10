@@ -69,6 +69,7 @@
 
                             <thead>
                                 <tr>
+                                    @if(\App\Helpers\Helper::isSuperAdmin())<th>Company</th>@endif
                                     <th>Invoice No.</th>
                                     <th>Date</th>
                                     <th>Firm Name</th>
@@ -80,6 +81,7 @@
                             <tbody>
                                 @forelse($reports as $report)
                                     <tr>
+                                        @if(\App\Helpers\Helper::isSuperAdmin())<td>{{ $report->company_name ?? '-' }}</td>@endif
                                         <td>{{ $report->invoice_no }}</td>
                                         <td>{{ \Carbon\Carbon::parse($report->date)->format('d/m/Y') }}</td>
                                         <td>{{ $report->firm_name }}</td>
@@ -88,14 +90,15 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center">No Data Found</td>
+                                        <td colspan="5" class="text-center">No Data Found</td>
                                     </tr>
                                 @endforelse
                             </tbody>
 
                             <tfoot>
                                 <tr>
-                                    <th colspan="3" class="text-end">Total</th>
+                                    @if(\App\Helpers\Helper::isSuperAdmin())<th></th>@endif
+                                    <th colspan="4" class="text-end">Total</th>
                                     <th>{{ number_format($totalAmount,2) }}</th>
                                 </tr>
                             </tfoot>

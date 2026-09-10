@@ -376,6 +376,7 @@
 
 @section('content')
 <div class="container-fluid flex-grow-1 container-p-y dashboard-shell">
+
     <div class="row g-4">
         <div class="col-12 col-xl-8">
             <div class="card hero-panel">
@@ -461,6 +462,7 @@
                         <table class="table pending-table">
                             <thead>
                                 <tr>
+                                    @if(\App\Helpers\Helper::isSuperAdmin())<th>Company</th>@endif
                                     <th>Invoice No</th>
                                     <th>Firm Name</th>
                                     <th>Salesman</th>
@@ -472,6 +474,7 @@
                             <tbody>
                                 @forelse($pendingInvoices as $invoice)
                                     <tr>
+                                        @if(\App\Helpers\Helper::isSuperAdmin())<td>{{ $invoice->company_name ?? '-' }}</td>@endif
                                         <td>
                                             <span class="invoice-pill">{{ $invoice->invoice_no }}</span>
                                         </td>
