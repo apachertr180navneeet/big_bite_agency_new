@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\InvoiceController;
 
 
 
@@ -44,4 +45,21 @@ Route::middleware('jwt.verify')->group(function() {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/delete-account', [AuthController::class, 'deleteAccount']);
     
+});
+
+/*
+|--------------------------------------------------------------------------
+| Multi Invoice / Bill Insert Routes (Red Bull, Cadbury, Parle)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('redbull')->group(function () {
+    Route::post('/insert-multi', [InvoiceController::class, 'insertMultiRedBull']);
+});
+
+Route::prefix('cadbury')->group(function () {
+    Route::post('/insert-multi', [InvoiceController::class, 'insertMultiCadbury']);
+});
+
+Route::prefix('parle')->group(function () {
+    Route::post('/insert-multi', [InvoiceController::class, 'insertMultiParle']);
 });
