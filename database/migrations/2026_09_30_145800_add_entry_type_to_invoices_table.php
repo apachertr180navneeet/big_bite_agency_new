@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->enum('entry_type', ['direct', 'hisabkitab'])->default('direct')->after('status');
+            if (!Schema::hasColumn('invoices', 'entry_type')) {
+                $table->enum('entry_type', ['direct', 'hisabkitab'])->default('direct')->after('status');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->dropColumn('entry_type');
+            if (Schema::hasColumn('invoices', 'entry_type')) {
+                $table->dropColumn('entry_type');
+            }
         });
     }
 };
