@@ -24,5 +24,5 @@ return new class extends Migration
             $table->dropColumn(['manager_status', 'status']);
         });
     }
-};
-
+};
+
