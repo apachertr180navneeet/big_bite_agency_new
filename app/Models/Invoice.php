@@ -22,6 +22,7 @@ class Invoice extends Model
         'discount_amount',
         'payable_amount',
         'status',
+        'entry_type',
         'user_id',
     ];
 
